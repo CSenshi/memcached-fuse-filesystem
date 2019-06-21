@@ -50,10 +50,7 @@ int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
 
     char *res = _recv_mm_resp(m->fd);
     // TODO error Handling (enum)
-    if (!strcmp(res, ADD_SUCCESS))
-        return 0;
-    else
-        return -1;
+    return 0;
 }
 
 char *memcached_get(struct memcached *m, char *key)
