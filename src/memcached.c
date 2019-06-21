@@ -11,6 +11,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#define ADD_STORED_STR "STORED"
+#define ADD_NOT_STORED_STR "NOT_STORED"
+
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, char *str);
 
@@ -18,6 +21,8 @@ void _append_ending(char **str);
 
 void _send_mm_req(int fd, char *req);
 char *_recv_mm_resp(int fd);
+
+mm_data_info _parse_resp(char *resp);
 
 void memcached_init(struct memcached *m)
 {
@@ -49,18 +54,25 @@ int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
     _send_mm_req(m->fd, val);
 
     char *res = _recv_mm_resp(m->fd);
-    // TODO error Handling (enum)
-    return 0;
+
+    if (!strncmp(res, ADD_STORED_STR, strlen(ADD_STORED_STR)))
+        return ADD_STORED;
+    else if (!strncmp(res, ADD_NOT_STORED_STR, strlen(ADD_NOT_STORED_STR)))
+        return ADD_NOT_STORED;
+
+    return ADD_ERROR;
 }
 
-char *memcached_get(struct memcached *m, char *key)
+mm_data_info memcached_get(struct memcached *m, char *key)
 {
     char *req = _create_str_request("get", key);
     _append_ending(&req);
 
     _send_mm_req(m->fd, req);
-    //TODO error Handling
     char *res = _recv_mm_resp(m->fd);
+
+    mm_data_info result = _parse_resp(res);
+    return result;
 }
 
 void memcached_exit(struct memcached *m)
@@ -69,9 +81,10 @@ void memcached_exit(struct memcached *m)
     close(m->fd);
 }
 
+/* Private Functions */
+
 void _send_mm_req(int fd, char *req)
 {
-    // TODO iterate with while cycle
     write(fd, req, strlen(req));
     _debug_print("Request Sent : %s", req);
 }
@@ -80,9 +93,10 @@ char *_recv_mm_resp(int fd)
 {
     int buff_size = 100;
     char *buffer = malloc(sizeof(char) * buff_size);
-    // TODO iterate with while
-    int t = read(fd, buffer, buff_size);
-    buffer[t] = '\0';
+
+    int len = read(fd, buffer, buff_size);
+    buffer[len] = '\0';
+
     _debug_print("Response Recieved : %s", buffer);
     return buffer;
 }
@@ -133,4 +147,18 @@ void _append_ending(char **str)
 {
     *str = realloc(*str, strlen(*str) + 2);
     strcat(*str, "\r\n");
+}
+
+mm_data_info _parse_resp(char *resp)
+{
+    mm_data_info res = {NULL, 0, 0, 0, NULL};
+    char *type = strtok(resp, " ");
+    if (strncmp(type, "END", strlen("END")))
+    {
+        res.key = strtok(NULL, " ");
+        res.flags = atoi(strtok(NULL, " "));
+        res.size = atoi(strtok(NULL, "\n"));
+        res.value = strtok(NULL, "\n");
+    }
+    return res;
 }

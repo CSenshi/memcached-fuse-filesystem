@@ -16,15 +16,22 @@ typedef struct mm_data_info
     int flags;
     int ttl;
     int size;
+    char *value;
 } mm_data_info;
 
+enum ADD
+{
+    ADD_STORED,
+    ADD_NOT_STORED,
+    ADD_ERROR
+};
 void memcached_init(struct memcached *m);
 
 /* Set a key unconditionally */
 int memcached_add(struct memcached *m, struct mm_data_info, char *value);
 
 /* Reads a value */
-char *memcached_get(struct memcached *m, char *key);
+mm_data_info memcached_get(struct memcached *m, char *key);
 
 void memcached_exit(struct memcached *m);
 
