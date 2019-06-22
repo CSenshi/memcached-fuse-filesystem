@@ -33,6 +33,9 @@ int memcached_add(struct memcached *m, struct mm_data_info, char *value);
 /* Reads a value */
 mm_data_info memcached_get(struct memcached *m, char *key);
 
+/* Invalidate all items immediately */
+void memcached_flush(struct memcached *m);
+
 void memcached_exit(struct memcached *m);
 
 #endif // !MEMCACHED_H

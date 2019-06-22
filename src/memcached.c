@@ -26,6 +26,8 @@ mm_data_info _parse_resp(char *resp);
 
 void memcached_init(struct memcached *m)
 {
+    _debug_print("\n");
+
     m->addr = "127.0.0.1";
     m->port = 11211;
     _debug_print("Trying to connect to %s:%d...\n", m->addr, m->port);
@@ -44,6 +46,8 @@ void memcached_init(struct memcached *m)
 
 int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
 {
+    _debug_print("\n");
+
     char *req = _create_struct_request("add", info);
     char *val = strdup(value);
 
@@ -55,16 +59,20 @@ int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
 
     char *res = _recv_mm_resp(m->fd);
 
+    int return_val = ADD_ERROR;
     if (!strncmp(res, ADD_STORED_STR, strlen(ADD_STORED_STR)))
-        return ADD_STORED;
+        return_val = ADD_STORED;
     else if (!strncmp(res, ADD_NOT_STORED_STR, strlen(ADD_NOT_STORED_STR)))
-        return ADD_NOT_STORED;
+        return_val = ADD_NOT_STORED;
 
-    return ADD_ERROR;
+    free(res);
+    return return_val;
 }
 
 mm_data_info memcached_get(struct memcached *m, char *key)
 {
+    _debug_print("\n");
+
     char *req = _create_str_request("get", key);
     _append_ending(&req);
 
@@ -75,8 +83,21 @@ mm_data_info memcached_get(struct memcached *m, char *key)
     return result;
 }
 
+void memcached_flush(struct memcached *m)
+{
+    _debug_print("\n");
+
+    char *req = strdup("flush_all");
+    _append_ending(&req);
+
+    _send_mm_req(m->fd, req);
+    free(req);
+    char *resp = _recv_mm_resp(m->fd);
+}
+
 void memcached_exit(struct memcached *m)
 {
+    _debug_print("\n");
     _debug_print("Closing Connection...\n");
     close(m->fd);
 }
@@ -86,7 +107,7 @@ void memcached_exit(struct memcached *m)
 void _send_mm_req(int fd, char *req)
 {
     write(fd, req, strlen(req));
-    _debug_print("Request Sent : %s", req);
+    _debug_print("Request Sent      : %s", req);
 }
 
 char *_recv_mm_resp(int fd)
