@@ -11,8 +11,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#define ADD_STORED_STR "STORED"
-#define ADD_NOT_STORED_STR "NOT_STORED"
+#define STORED_STR "STORED"
+#define NOT_STORED_STR "NOT_STORED"
+
+#define DELETED_STR "DELETED"
+#define NOT_FOUND_STR "NOT_FOUND"
 
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, char *str);
@@ -59,14 +62,58 @@ int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
 
     char *res = _recv_mm_resp(m->fd);
 
-    int return_val = ADD_ERROR;
-    if (!strncmp(res, ADD_STORED_STR, strlen(ADD_STORED_STR)))
-        return_val = ADD_STORED;
-    else if (!strncmp(res, ADD_NOT_STORED_STR, strlen(ADD_NOT_STORED_STR)))
-        return_val = ADD_NOT_STORED;
+    int return_val = ERROR;
+    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+        return_val = STORED;
+    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+        return_val = NOT_STORED;
 
     free(res);
     return return_val;
+}
+
+int memcached_set(struct memcached *m, struct mm_data_info info, char *value)
+{
+    _debug_print("\n");
+
+    char *req = _create_struct_request("set", info);
+    char *val = strdup(value);
+
+    _append_ending(&req);
+    _append_ending(&val);
+
+    _send_mm_req(m->fd, req);
+    _send_mm_req(m->fd, val);
+
+    char *res = _recv_mm_resp(m->fd);
+
+    int return_val = ERROR;
+    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+        return_val = STORED;
+    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+        return_val = NOT_STORED;
+
+    free(res);
+    return return_val;
+}
+
+int memcached_delete(struct memcached *m, char *key)
+{
+    _debug_print("\n");
+
+    char *req = _create_str_request("delete", key);
+    _append_ending(&req);
+
+    _send_mm_req(m->fd, req);
+    char *res = _recv_mm_resp(m->fd);
+
+    int result = ERROR;
+    if (!strncmp(res, DELETED_STR, strlen(DELETED_STR)))
+        result = DELETED;
+    else if (!strncmp(res, NOT_FOUND_STR, strlen(NOT_FOUND_STR)))
+        result = NOT_FOUND;
+
+    return result;
 }
 
 mm_data_info memcached_get(struct memcached *m, char *key)
@@ -103,7 +150,6 @@ void memcached_exit(struct memcached *m)
 }
 
 /* Private Functions */
-
 void _send_mm_req(int fd, char *req)
 {
     write(fd, req, strlen(req));

@@ -19,16 +19,24 @@ typedef struct mm_data_info
     char *value;
 } mm_data_info;
 
-enum ADD
+enum ENUM
 {
-    ADD_STORED,
-    ADD_NOT_STORED,
-    ADD_ERROR
+    STORED,
+    DELETED,
+    NOT_FOUND,
+    NOT_STORED,
+    ERROR
 };
 void memcached_init(struct memcached *m);
 
-/* Set a key unconditionally */
+/* Add a new key */
 int memcached_add(struct memcached *m, struct mm_data_info, char *value);
+
+/* Set a key unconditionally */
+int memcached_set(struct memcached *m, struct mm_data_info info, char *value);
+
+/* Deletes an existing key */
+int memcached_delete(struct memcached *m, char *key);
 
 /* Reads a value */
 mm_data_info memcached_get(struct memcached *m, char *key);
