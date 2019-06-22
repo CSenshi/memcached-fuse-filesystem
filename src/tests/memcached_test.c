@@ -49,6 +49,7 @@ int main()
         else
             printf("Failed : Test %d\n", i);
     }
+    memcached_exit(m);
 }
 
 int test_0(memcached *m)
