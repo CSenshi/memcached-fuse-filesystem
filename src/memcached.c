@@ -11,29 +11,28 @@
 #include <string.h>
 #include <unistd.h>
 
+#define MMCH_ADDR "127.0.0.1"
+#define MMCH_PORT 11211
+
 #define STORED_STR "STORED"
 #define NOT_STORED_STR "NOT_STORED"
-
 #define DELETED_STR "DELETED"
 #define NOT_FOUND_STR "NOT_FOUND"
 
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, char *str);
-
-void _append_ending(char **str);
-
-void _send_mm_req(int fd, char *req);
-char *_recv_mm_resp(int fd);
-
 mm_data_info _parse_resp(char *resp);
+void _send_mm_req(int fd, char *req);
+void _append_ending(char **str);
+char *_recv_mm_resp(int fd);
 
 void memcached_init(struct memcached *m)
 {
     _debug_print("\n");
+    _debug_print("Trying to connect to %s:%d...\n", MMCH_ADDR, MMCH_PORT);
 
-    m->addr = "127.0.0.1";
-    m->port = 11211;
-    _debug_print("Trying to connect to %s:%d...\n", m->addr, m->port);
+    m->addr = MMCH_ADDR;
+    m->port = MMCH_PORT;
 
     m->fd = socket(AF_INET, SOCK_STREAM, 0);
     struct in_addr s_addr;
@@ -47,12 +46,12 @@ void memcached_init(struct memcached *m)
     _debug_print("Connection Succesful!\n");
 }
 
-int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
+int memcached_add(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
     char *req = _create_struct_request("add", info);
-    char *val = strdup(value);
+    char *val = strdup(info.value);
 
     _append_ending(&req);
     _append_ending(&val);
@@ -72,12 +71,12 @@ int memcached_add(struct memcached *m, struct mm_data_info info, char *value)
     return return_val;
 }
 
-int memcached_set(struct memcached *m, struct mm_data_info info, char *value)
+int memcached_set(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
     char *req = _create_struct_request("set", info);
-    char *val = strdup(value);
+    char *val = strdup(info.value);
 
     _append_ending(&req);
     _append_ending(&val);
@@ -146,7 +145,16 @@ void memcached_exit(struct memcached *m)
 {
     _debug_print("\n");
     _debug_print("Closing Connection...\n");
+
+    char *req = strdup("quit");
+    _append_ending(&req);
+    _send_mm_req(m->fd, req);
+    char *resp = _recv_mm_resp(m->fd);
+
     close(m->fd);
+
+    _debug_print("\n");
+    _debug_print("Connection Closed Succesfully!\n");
 }
 
 /* Private Functions */

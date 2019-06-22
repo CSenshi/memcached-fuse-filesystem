@@ -30,10 +30,10 @@ enum ENUM
 void memcached_init(struct memcached *m);
 
 /* Add a new key */
-int memcached_add(struct memcached *m, struct mm_data_info, char *value);
+int memcached_add(struct memcached *m, struct mm_data_info);
 
 /* Set a key unconditionally */
-int memcached_set(struct memcached *m, struct mm_data_info info, char *value);
+int memcached_set(struct memcached *m, struct mm_data_info info);
 
 /* Deletes an existing key */
 int memcached_delete(struct memcached *m, char *key);
