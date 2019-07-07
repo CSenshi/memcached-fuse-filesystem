@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_TESTS 8
+#define NUM_TESTS 9
 
 typedef int test_fun(memcached *m);
 
@@ -15,6 +15,7 @@ int test_4(memcached *m);
 int test_5(memcached *m);
 int test_6(memcached *m);
 int test_7(memcached *m);
+int test_8(memcached *m);
 
 typedef struct fun_desc
 {
@@ -29,14 +30,15 @@ fun_desc test_table[] = {
     {test_4},
     {test_5},
     {test_6},
-    {test_7}};
+    {test_7},
+    {test_8}};
 
 int main()
 {
     memcached *m = malloc(sizeof(memcached));
     memcached_init(m);
     int total = 0;
-    for (int i = 0; i < NUM_TESTS; i++)
+    for (int i = 7; i < NUM_TESTS; i++)
     {
         memcached_flush(m);
 
@@ -208,6 +210,72 @@ int test_7(memcached *m)
     for (int i = 0; i < 6; i++)
         if (info_res.value[i] != value_test[i])
             return -1;
+
+    return 0;
+}
+
+int test_8(memcached *m)
+{
+    typedef struct test_struct
+    {
+        int val1;
+        int val2;
+        char arr[7];
+    } test_struct;
+
+    char *key_test = "test_key";
+
+    test_struct *str = malloc(sizeof(struct test_struct));
+    str->val1 = 1;
+    str->val2 = 2;
+    str->arr[0] = 'S';
+    str->arr[1] = 'E';
+    str->arr[2] = 'N';
+    str->arr[3] = 'S';
+    str->arr[4] = 'H';
+    str->arr[5] = 'I';
+    str->arr[6] = '\0';
+
+    // ADD
+    memcached_add_struct(m, key_test, str, sizeof(struct test_struct));
+    mm_data_info info = memcached_get(m, key_test);
+
+    test_struct *str2 = malloc(sizeof(test_struct));
+    memcpy(str2, info.value, sizeof(test_struct));
+    printf("AAAA %s\n", str2->arr);
+    if (str2->val1 != str->val1 || str2->val2 != str->val2 || strcmp("SENSHI", str2->arr))
+        return -1;
+
+    // REPLACE
+    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct));
+    info = memcached_get(m, key_test);
+
+    memset(str2, 0, sizeof(test_struct));
+    memcpy(str2, info.value, sizeof(test_struct));
+
+    if (str2->val1 != str->val1 || str2->val2 != str->val2 || strcmp("SENSHI", str2->arr))
+        return -1;
+
+    // set
+    str->val1 = 100;
+    str->val2 = 200;
+
+    str->arr[0] = 'O';
+    str->arr[1] = 'S';
+    str->arr[2] = 'O';
+    str->arr[3] = 'S';
+    str->arr[4] = 'O';
+    str->arr[5] = 'S';
+    str->arr[6] = '\0';
+
+    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct));
+    info = memcached_get(m, key_test);
+
+    memset(str2, 0, sizeof(test_struct));
+    memcpy(str2, info.value, sizeof(test_struct));
+
+    if (str2->val1 != str->val1 || str2->val2 != str->val2 || strcmp("OSOSOS", str2->arr))
+        return -1;
 
     return 0;
 }
