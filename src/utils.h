@@ -5,12 +5,20 @@
 #include "string.h"
 #include "utils.h"
 
-char *parse_path(const char *);
+typedef struct parse_val
+{
+    int n;
+    char **arr;
+} parse_val;
+
+parse_val parse_path(const char *);
 
 int get_next_index(struct memcached *m);
 
 char *int_to_str(int k);
 
 int str_to_int(char *str);
+
+int count_char(const char *str, char c);
 
 #endif // !UTILS_H
