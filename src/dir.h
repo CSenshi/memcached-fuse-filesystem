@@ -12,10 +12,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#define ROOT_DIR_INODE 23
+#define ROOT_DIR_INODE 2322
 
 typedef struct dir
 {
+    int _NOT_USED;
     char dir_name[MAX_FNAME];
     int inode;
     int par_inode;
@@ -25,5 +26,7 @@ typedef struct dir
 
 int dir_create(const char *, mode_t, memcached *);
 void dir_init(dir *, const char *, mode_t, memcached *);
+void dir_append(int, dir *, memcached *m);
+dir *dir_mmch_getdir(int inode, memcached *m);
 
 #endif // !DIR_H
