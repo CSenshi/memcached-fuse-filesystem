@@ -7,6 +7,7 @@
 #include <netinet/ip.h>
 
 #include "debug.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -19,6 +20,7 @@
 #define DELETED_STR "DELETED"
 #define NOT_FOUND_STR "NOT_FOUND"
 
+char *_create_str_request3(char *command, char *str1, char *str2);
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, char *str);
 mm_data_info _parse_resp(char *resp);
@@ -94,6 +96,19 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
 
     free(res);
     return return_val;
+}
+
+int memcached_increment(struct memcached *m, char *key, int n)
+{
+    _debug_print("\n");
+
+    char *req = _create_str_request3("incr", key, int_to_str(n));
+    _append_ending(&req);
+
+    _send_mm_req(m->fd, req);
+    char *res = _recv_mm_resp(m->fd);
+
+    return str_to_int(res);
 }
 
 int memcached_delete(struct memcached *m, char *key)
@@ -184,6 +199,20 @@ char *_create_str_request(char *command, char *str)
     strcat(req, command);
     strcat(req, " ");
     strcat(req, str);
+
+    return req;
+}
+
+char *_create_str_request3(char *command, char *str1, char *str2)
+{
+    int to_alloc = strlen(command) + strlen(str1) + strlen(str2) + 1;
+    char *req = malloc(to_alloc);
+
+    strcat(req, command);
+    strcat(req, " ");
+    strcat(req, str1);
+    strcat(req, " ");
+    strcat(req, str2);
 
     return req;
 }

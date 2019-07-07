@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#define INDEX_KEY_STR "_key_current_index_"
+
 typedef struct memcached
 {
     char *addr;
@@ -30,10 +32,13 @@ enum ENUM
 void memcached_init(struct memcached *m);
 
 /* Add a new key */
-int memcached_add(struct memcached *m, struct mm_data_info);
+int memcached_add(struct memcached *m, struct mm_data_info info);
 
 /* Set a key unconditionally */
 int memcached_set(struct memcached *m, struct mm_data_info info);
+
+/* Increments key by one */
+int memcached_increment(struct memcached *m, char *key, int n);
 
 /* Deletes an existing key */
 int memcached_delete(struct memcached *m, char *key);
