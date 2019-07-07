@@ -198,7 +198,7 @@ void _send_mm_req(int fd, char *req, int size)
 
 char *_recv_mm_resp(int fd)
 {
-    int buff_size = 100;
+    int buff_size = 4096;
     char *buffer = malloc(sizeof(char) * buff_size);
 
     int len = read(fd, buffer, buff_size);
