@@ -24,8 +24,8 @@ char *_create_str_request3(char *command, char *str1, char *str2);
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, char *str);
 mm_data_info _parse_resp(char *resp);
-void _send_mm_req(int fd, char *req);
-void _append_ending(char **str);
+void _send_mm_req(int fd, char *req, int size);
+void _append_ending(char **str, int size);
 char *_recv_mm_resp(int fd);
 
 void memcached_init(struct memcached *m)
@@ -53,13 +53,15 @@ int memcached_add(struct memcached *m, struct mm_data_info info)
     _debug_print("\n");
 
     char *req = _create_struct_request("add", info);
-    char *val = strdup(info.value);
 
-    _append_ending(&req);
-    _append_ending(&val);
+    char *val = malloc(info.size);
+    memcpy(val, info.value, info.size);
 
-    _send_mm_req(m->fd, req);
-    _send_mm_req(m->fd, val);
+    _append_ending(&req, strlen(req));
+    _append_ending(&val, info.size);
+
+    _send_mm_req(m->fd, req, strlen(req));
+    _send_mm_req(m->fd, val, info.size + 2);
 
     char *res = _recv_mm_resp(m->fd);
 
@@ -80,11 +82,11 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
     char *req = _create_struct_request("set", info);
     char *val = strdup(info.value);
 
-    _append_ending(&req);
-    _append_ending(&val);
+    _append_ending(&req, strlen(req));
+    _append_ending(&val, info.size);
 
-    _send_mm_req(m->fd, req);
-    _send_mm_req(m->fd, val);
+    _send_mm_req(m->fd, req, strlen(req));
+    _send_mm_req(m->fd, val, info.size + 2);
 
     char *res = _recv_mm_resp(m->fd);
 
@@ -103,9 +105,9 @@ int memcached_increment(struct memcached *m, char *key, int n)
     _debug_print("\n");
 
     char *req = _create_str_request3("incr", key, int_to_str(n));
-    _append_ending(&req);
+    _append_ending(&req, strlen(req));
 
-    _send_mm_req(m->fd, req);
+    _send_mm_req(m->fd, req, strlen(req));
     char *res = _recv_mm_resp(m->fd);
 
     return str_to_int(res);
@@ -116,9 +118,9 @@ int memcached_delete(struct memcached *m, char *key)
     _debug_print("\n");
 
     char *req = _create_str_request("delete", key);
-    _append_ending(&req);
+    _append_ending(&req, strlen(req));
 
-    _send_mm_req(m->fd, req);
+    _send_mm_req(m->fd, req, strlen(req));
     char *res = _recv_mm_resp(m->fd);
 
     int result = ERROR;
@@ -135,9 +137,9 @@ mm_data_info memcached_get(struct memcached *m, char *key)
     _debug_print("\n");
 
     char *req = _create_str_request("get", key);
-    _append_ending(&req);
+    _append_ending(&req, strlen(req));
 
-    _send_mm_req(m->fd, req);
+    _send_mm_req(m->fd, req, strlen(req));
     char *res = _recv_mm_resp(m->fd);
 
     mm_data_info result = _parse_resp(res);
@@ -149,9 +151,9 @@ void memcached_flush(struct memcached *m)
     _debug_print("\n");
 
     char *req = strdup("flush_all");
-    _append_ending(&req);
+    _append_ending(&req, strlen(req));
 
-    _send_mm_req(m->fd, req);
+    _send_mm_req(m->fd, req, strlen(req));
     free(req);
     char *resp = _recv_mm_resp(m->fd);
 }
@@ -162,8 +164,8 @@ void memcached_exit(struct memcached *m)
     _debug_print("Closing Connection...\n");
 
     char *req = strdup("quit");
-    _append_ending(&req);
-    _send_mm_req(m->fd, req);
+    _append_ending(&req, strlen(req));
+    _send_mm_req(m->fd, req, strlen(req));
     char *resp = _recv_mm_resp(m->fd);
 
     close(m->fd);
@@ -173,9 +175,9 @@ void memcached_exit(struct memcached *m)
 }
 
 /* Private Functions */
-void _send_mm_req(int fd, char *req)
+void _send_mm_req(int fd, char *req, int size)
 {
-    write(fd, req, strlen(req));
+    write(fd, req, size);
     _debug_print("Request Sent      : %s", req);
 }
 
@@ -247,10 +249,11 @@ char *_create_struct_request(char *command, mm_data_info info)
     return req;
 }
 
-void _append_ending(char **str)
+void _append_ending(char **str, int size)
 {
-    *str = realloc(*str, strlen(*str) + 2);
-    strcat(*str, "\r\n");
+    *str = realloc(*str, size + 2);
+    (*str)[size] = '\r';
+    (*str)[size + 1] = '\n';
 }
 
 mm_data_info _parse_resp(char *resp)
