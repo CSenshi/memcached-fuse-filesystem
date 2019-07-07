@@ -39,7 +39,7 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     d->inode = get_next_index(m);
 
     // ToDo: implement subdirectories
-    d->par_inode = ROOT_DIR_INODE + 1;
+    d->par_inode = ROOT_DIR_INODE;
 
     d->chunk_inode = chunk_create(m);
     d->mode = mode;
