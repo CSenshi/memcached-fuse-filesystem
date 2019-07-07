@@ -158,6 +158,21 @@ void memcached_flush(struct memcached *m)
     char *resp = _recv_mm_resp(m->fd);
 }
 
+int memcached_add_struct(struct memcached *m, char *key, void *src, int size)
+{
+    mm_data_info chunck_info;
+
+    chunck_info.key = key;
+    chunck_info.ttl = 0;
+    chunck_info.flags = 0;
+    chunck_info.size = size;
+
+    chunck_info.value = malloc(size + 1);
+    memcpy(chunck_info.value, src, chunck_info.size);
+
+    return memcached_add(m, chunck_info);
+}
+
 void memcached_exit(struct memcached *m)
 {
     _debug_print("\n");

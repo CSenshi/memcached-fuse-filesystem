@@ -49,6 +49,9 @@ mm_data_info memcached_get(struct memcached *m, char *key);
 /* Invalidate all items immediately */
 void memcached_flush(struct memcached *m);
 
+/* Saves new data in mamecached */
+int memcached_add_struct(struct memcached *m, char *key, void *src, int size);
+
 void memcached_exit(struct memcached *m);
 
 #endif // !MEMCACHED_H
