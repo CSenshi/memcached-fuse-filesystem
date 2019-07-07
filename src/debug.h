@@ -5,11 +5,6 @@
 
 #define DEBUG 1
 
-void _error_print(char *msg)
-{
-    fprintf(stderr, "Error : %s", msg);
-}
-
 __fortify_function int
 _debug_print(const char *__restrict __fmt, ...)
 {
