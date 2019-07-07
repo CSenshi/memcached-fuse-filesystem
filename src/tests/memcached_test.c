@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_TESTS 5
+#define NUM_TESTS 8
 
 typedef int test_fun(memcached *m);
 
@@ -13,6 +13,8 @@ int test_2(memcached *m);
 int test_3(memcached *m);
 int test_4(memcached *m);
 int test_5(memcached *m);
+int test_6(memcached *m);
+int test_7(memcached *m);
 
 typedef struct fun_desc
 {
@@ -25,12 +27,15 @@ fun_desc test_table[] = {
     {test_2},
     {test_3},
     {test_4},
-    {test_5}};
+    {test_5},
+    {test_6},
+    {test_7}};
 
 int main()
 {
     memcached *m = malloc(sizeof(memcached));
     memcached_init(m);
+    int total = 0;
     for (int i = 0; i < NUM_TESTS; i++)
     {
         memcached_flush(m);
@@ -40,7 +45,9 @@ int main()
             printf("Passed : Test %d\n", i);
         else
             printf("Failed : Test %d\n", i);
+        total += res == 0 ? 1 : 0;
     }
+    printf("Total Tests Passed : %d/%d", total, NUM_TESTS);
     memcached_exit(m);
 }
 
@@ -157,6 +164,50 @@ int test_5(memcached *m)
     info_res = memcached_get(m, key_test);
     if (res != 16)
         return -1;
+
+    return 0;
+}
+
+int test_6(memcached *m)
+{
+    char *key_test = "test_key";
+    char *value_test = "s\0\0aa";
+    mm_data_info info = {key_test, 0, 0, 5, value_test};
+
+    int res = memcached_add(m, info);
+    if (res != STORED)
+        return -1;
+
+    mm_data_info info_res = memcached_get(m, key_test);
+
+    for (int i = 0; i < 5; i++)
+    {
+        if (info_res.value[i] != value_test[i])
+            return -1;
+    }
+
+    return 0;
+}
+int test_7(memcached *m)
+{
+    char *key_test = "test_key";
+    char *value_test = "QWERTY";
+    mm_data_info info = {key_test, 0, 0, 6, value_test};
+
+    int res = memcached_add(m, info);
+    if (res != STORED)
+        return -1;
+
+    value_test = "A\0\0\0\0\0";
+    mm_data_info new_info = {key_test, 0, 0, 6, value_test};
+    res = memcached_set(m, new_info);
+    if (res != STORED)
+        return -1;
+
+    mm_data_info info_res = memcached_get(m, key_test);
+    for (int i = 0; i < 6; i++)
+        if (info_res.value[i] != value_test[i])
+            return -1;
 
     return 0;
 }
