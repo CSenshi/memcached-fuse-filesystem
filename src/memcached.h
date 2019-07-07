@@ -37,6 +37,9 @@ int memcached_add(struct memcached *m, struct mm_data_info info);
 /* Set a key unconditionally */
 int memcached_set(struct memcached *m, struct mm_data_info info);
 
+/* Overwrite existing key */
+int memcached_replace(struct memcached *m, struct mm_data_info info);
+
 /* Increments key by one */
 int memcached_increment(struct memcached *m, char *key, int n);
 
@@ -49,8 +52,14 @@ mm_data_info memcached_get(struct memcached *m, char *key);
 /* Invalidate all items immediately */
 void memcached_flush(struct memcached *m);
 
-/* Saves new data in mamecached */
+/* Saves new data in memcached */
 int memcached_add_struct(struct memcached *m, char *key, void *src, int size);
+
+/* Sets new data in memcached */
+int memcached_set_struct(struct memcached *m, char *key, void *src, int size);
+
+/* Replaces new data in memcached */
+int memcached_replace_struct(struct memcached *m, char *key, void *src, int size);
 
 void memcached_exit(struct memcached *m);
 

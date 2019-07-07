@@ -55,6 +55,7 @@ int memcached_add(struct memcached *m, struct mm_data_info info)
     char *req = _create_struct_request("add", info);
 
     char *val = malloc(info.size);
+    memset(val, 0, info.size);
     memcpy(val, info.value, info.size);
 
     _append_ending(&req, strlen(req));
@@ -79,8 +80,39 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("set", info);
-    char *val = strdup(info.value);
+    char *req = _create_struct_request("replace", info);
+
+    char *val = malloc(info.size);
+    memset(val, 0, info.size);
+    memcpy(val, info.value, info.size);
+
+    _append_ending(&req, strlen(req));
+    _append_ending(&val, info.size);
+
+    _send_mm_req(m->fd, req, strlen(req));
+    _send_mm_req(m->fd, val, info.size + 2);
+
+    char *res = _recv_mm_resp(m->fd);
+
+    int return_val = ERROR;
+    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+        return_val = STORED;
+    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+        return_val = NOT_STORED;
+
+    free(res);
+    return return_val;
+}
+
+int memcached_replace(struct memcached *m, struct mm_data_info info)
+{
+    _debug_print("\n");
+
+    char *req = _create_struct_request("replace", info);
+
+    char *val = malloc(info.size);
+    memset(val, 0, info.size);
+    memcpy(val, info.value, info.size);
 
     _append_ending(&req, strlen(req));
     _append_ending(&val, info.size);
@@ -160,17 +192,50 @@ void memcached_flush(struct memcached *m)
 
 int memcached_add_struct(struct memcached *m, char *key, void *src, int size)
 {
-    mm_data_info chunck_info;
+    mm_data_info info;
 
-    chunck_info.key = key;
-    chunck_info.ttl = 0;
-    chunck_info.flags = 0;
-    chunck_info.size = size;
+    info.key = key;
+    info.ttl = 0;
+    info.flags = 0;
+    info.size = size;
 
-    chunck_info.value = malloc(size + 1);
-    memcpy(chunck_info.value, src, chunck_info.size);
+    info.value = malloc(size + 1);
+    memset(info.value, 0, size + 1);
+    memcpy(info.value, src, info.size);
 
-    return memcached_add(m, chunck_info);
+    return memcached_add(m, info);
+}
+
+int memcached_set_struct(struct memcached *m, char *key, void *src, int size)
+{
+    mm_data_info info;
+
+    info.key = key;
+    info.ttl = 0;
+    info.flags = 0;
+    info.size = size;
+
+    info.value = malloc(size + 1);
+    memset(info.value, 0, size + 1);
+    memcpy(info.value, src, info.size);
+
+    return memcached_set(m, info);
+}
+
+int memcached_replace_struct(struct memcached *m, char *key, void *src, int size)
+{
+    mm_data_info info;
+
+    info.key = key;
+    info.ttl = 0;
+    info.flags = 0;
+    info.size = size;
+
+    info.value = malloc(size + 1);
+    memset(info.value, 0, size + 1);
+    memcpy(info.value, src, info.size);
+
+    return memcached_replace(m, info);
 }
 
 void memcached_exit(struct memcached *m)
@@ -200,6 +265,7 @@ char *_recv_mm_resp(int fd)
 {
     int buff_size = 4096;
     char *buffer = malloc(sizeof(char) * buff_size);
+    memset(buffer, 0, sizeof(char) * buff_size);
 
     int len = read(fd, buffer, buff_size);
     buffer[len] = '\0';
@@ -212,6 +278,7 @@ char *_create_str_request(char *command, char *str)
 {
     int to_alloc = strlen(command) + strlen(str) + 1;
     char *req = malloc(to_alloc);
+    memset(req, 0, to_alloc);
 
     strcat(req, command);
     strcat(req, " ");
@@ -224,6 +291,7 @@ char *_create_str_request3(char *command, char *str1, char *str2)
 {
     int to_alloc = strlen(command) + strlen(str1) + strlen(str2) + 1;
     char *req = malloc(to_alloc);
+    memset(req, 0, to_alloc);
 
     strcat(req, command);
     strcat(req, " ");
@@ -247,6 +315,7 @@ char *_create_struct_request(char *command, mm_data_info info)
 
     int to_alloc = strlen(command) + strlen(info.key) + strlen(flags_str) + strlen(ttl_str) + strlen(size_str) + 7;
     char *req = malloc(to_alloc);
+    memset(req, 0, to_alloc);
 
     strcat(req, command);
     strcat(req, " ");
