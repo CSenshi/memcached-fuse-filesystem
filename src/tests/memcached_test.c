@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NUM_TESTS 10
+#define NUM_TESTS 5
 
 typedef int test_fun(memcached *m);
 
@@ -13,10 +13,6 @@ int test_2(memcached *m);
 int test_3(memcached *m);
 int test_4(memcached *m);
 int test_5(memcached *m);
-int test_6(memcached *m);
-int test_7(memcached *m);
-int test_8(memcached *m);
-int test_9(memcached *m);
 
 typedef struct fun_desc
 {
@@ -29,11 +25,7 @@ fun_desc test_table[] = {
     {test_2},
     {test_3},
     {test_4},
-    {test_5},
-    {test_6},
-    {test_7},
-    {test_8},
-    {test_9}};
+    {test_5}};
 
 int main()
 {
@@ -146,21 +138,25 @@ int test_4(memcached *m)
 }
 int test_5(memcached *m)
 {
-    return 0;
-}
-int test_6(memcached *m)
-{
-    return 0;
-}
-int test_7(memcached *m)
-{
-    return 0;
-}
-int test_8(memcached *m)
-{
-    return 0;
-}
-int test_9(memcached *m)
-{
+    char *key_test = "test_key";
+    char *value_test = "5";
+    mm_data_info info = {key_test, 0, 0, strlen(value_test), value_test};
+
+    int res = memcached_add(m, info);
+    if (res != STORED)
+        return -1;
+
+    res = memcached_increment(m, key_test, 1);
+
+    mm_data_info info_res = memcached_get(m, key_test);
+    if (res != 6)
+        return -1;
+
+    res = memcached_increment(m, key_test, 10);
+
+    info_res = memcached_get(m, key_test);
+    if (res != 16)
+        return -1;
+
     return 0;
 }
