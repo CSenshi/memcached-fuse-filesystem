@@ -8,6 +8,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "debug.h"
+#include "dir.h"
+#include "file.h"
+#include "memcached.h"
+#include "utils.h"
+
 /*  Initialize filesystem
  *
  *  The return value will passed in the private_data field of struct fuse_context to all file operations,
@@ -15,8 +21,27 @@
  *  It overrides the initial value provided to fuse_main() / fuse_new().*/
 void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 {
+    _debug_print("FS : Called init\n");
+
     (void)conn;
-    return NULL;
+
+    // Initialize connection
+    struct memcached *m = malloc(sizeof(struct memcached));
+    memcached_init(m);
+
+    // ToDo: Check if FileSystem is our type. if not flush
+    memcached_flush(m);
+
+    // Insert inode counter
+    char *index_key = int_to_str(INIT_INODE);
+    struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
+    memcached_add(m, index_info);
+
+    // Add Root Directory
+    mode_t root_mode = 0;
+    dir_create("/", root_mode, m);
+
+    return m;
 }
 
 /* Clean up filesystem
@@ -24,6 +49,10 @@ void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
  * Called on filesystem exit. */
 void FS_destroy(void *private_data)
 {
+    _debug_print("FS : Called destroy\n");
+
+    memcached *m = (memcached *)private_data;
+    memcached_exit(m);
 }
 
 /* Get file system statistics
@@ -31,6 +60,8 @@ void FS_destroy(void *private_data)
  * The 'f_favail', 'f_fsid' and 'f_flag' fields are ignored */
 int FS_statfs(const char *path, struct statvfs *buf)
 {
+    _debug_print("FS : Called statfs\n");
+
     return 0;
 }
 
@@ -38,15 +69,26 @@ int FS_statfs(const char *path, struct statvfs *buf)
  *
  * Note that the mode argument may not have the type specification bits set,
  * i.e. S_ISDIR(mode) can be false.
- * To obtain the correct directory type bits use mode|S_IFDIR */
+ * To obtain the correct directory type bits use mode|S_IFDIR 
+ * 
+ * RETURN VALUE
+ *      mkdir() return  zero  on  success,  or  -1  if  an  error */
 int FS_mkdir(const char *path, mode_t mode)
 {
-    return 0;
+    _debug_print("FS : Called mkdir\n");
+
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    int res = dir_create(path, mode, m);
+    return res;
 }
 
 /* Remove a directory */
 int FS_rmdir(const char *path)
 {
+    _debug_print("FS : Called rmdir\n");
+
     return 0;
 }
 
@@ -58,6 +100,8 @@ int FS_rmdir(const char *path)
  * which will be passed to readdir, releasedir and fsyncdir. */
 int FS_opendir(const char *path, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called opendir\n");
+
     return 0;
 }
 
@@ -75,12 +119,16 @@ int FS_opendir(const char *path, struct fuse_file_info *fi)
  *    When the buffer is full (or an error happens) the filler function will return '1'. */
 int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 {
+    _debug_print("FS : Called readdir\n");
+
     return 0;
 }
 
 /* Release directory */
 int FS_releasedir(const char *path, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called releasedir\n");
+
     return 0;
 }
 
@@ -89,12 +137,16 @@ int FS_releasedir(const char *path, struct fuse_file_info *fi)
  * If the datasync parameter is non-zero, then only the user data should be flushed, not the meta data */
 int FS_fsyncdir(const char *path, int datasync, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called fsyncdir\n");
+
     return 0;
 }
 
 /* Remove a file */
 int FS_unlink(const char *path)
 {
+    _debug_print("FS : Called unlink\n");
+
     return 0;
 }
 
@@ -106,6 +158,8 @@ int FS_unlink(const char *path)
  * the mknod() and open() methods will be called instead. */
 int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called create\n");
+
     return 0;
 }
 
@@ -138,6 +192,8 @@ int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
  * this is treated as success and future calls to open will also succeed without being send to the filesystem process. */
 int FS_open(const char *path, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called open\n");
+
     return 0;
 }
 
@@ -149,6 +205,8 @@ int FS_open(const char *path, struct fuse_file_info *fi)
  * in which case the return value of the read system call will reflect the return value of this operation. */
 int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called read\n");
+
     return 0;
 }
 
@@ -160,6 +218,8 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
  * Unless FUSE_CAP_HANDLE_KILLPRIV is disabled, this method is expected to reset the setuid and setgid bits. */
 int FS_write(const char *path, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called write\n");
+
     return 0;
 }
 
@@ -173,6 +233,8 @@ int FS_write(const char *path, const char *buf, size_t size, off_t off, struct f
  * that no more reads/writes will happen on the file. The return value of release is ignored. */
 int FS_release(const char *path, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called release\n");
+
     return 0;
 }
 
@@ -201,6 +263,8 @@ int FS_release(const char *path, struct fuse_file_info *fi)
  * It may be called more times than expected, or not at all. */
 int FS_flush(const char *path, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called flush\n");
+
     return 0;
 }
 
@@ -209,6 +273,8 @@ int FS_flush(const char *path, struct fuse_file_info *fi)
  * If the datasync parameter is non-zero, then only the user data should be flushed, not the meta data. */
 int FS_fsync(const char *path, int datasync, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called fsync\n");
+
     return 0;
 }
 
@@ -222,7 +288,14 @@ int FS_fsync(const char *path, int datasync, struct fuse_file_info *fi)
  * fi will always be NULL if the file is not currently open, but may also be NULL if the file is open. */
 int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
 {
-    return 0;
+    _debug_print("FS : Called getattr\n");
+
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    // ToDo: implement reading attributes
+    // int inode = get_inode(path, m);
+    return -2;
 }
 
 /* Check file access permissions
@@ -233,29 +306,39 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
  * This method is not called under Linux kernel versions 2.4.x */
 int FS_access(const char *path, int mask)
 {
+    _debug_print("FS : Called access\n");
+
     return 0;
 }
 
 /* Set extended attributes */
 int FS_setxattr(const char *path, const char *name, const char *value, size_t size, int flags)
 {
+    _debug_print("FS : Called setxattr\n");
+
     return 0;
 }
 /* Get extended attributes */
 int FS_getxattr(const char *path, const char *name, char *value, size_t size)
 {
+    _debug_print("FS : Called getxattr\n");
+
     return 0;
 }
 
 /* List extended attributes */
 int FS_listxattr(const char *path, char *lsit, size_t size)
 {
+    _debug_print("FS : Called listxattr\n");
+
     return 0;
 }
 
 /* Remove extended attributes */
 int FS_removexattr(const char *path, const char *name)
 {
+    _debug_print("FS : Called removexattr\n");
+
     return 0;
 }
 
@@ -265,6 +348,8 @@ int FS_removexattr(const char *path, const char *name)
  * but may also be NULL if the file is open. */
 int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called chmod\n");
+
     return 0;
 }
 
@@ -277,18 +362,24 @@ int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
  * this method is expected to reset the setuid and setgid bits. */
 int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 {
+    _debug_print("FS : Called chown\n");
+
     return 0;
 }
 
 /* Create a hard link to a file */
 int FS_link(const char *oldpath, const char *newpath)
 {
+    _debug_print("FS : Called link\n");
+
     return 0;
 }
 
 /* Create a symbolic link */
 int FS_symlink(const char *linkname, const char *path)
 {
+    _debug_print("FS : Called symlink\n");
+
     return 0;
 }
 
@@ -300,5 +391,7 @@ int FS_symlink(const char *linkname, const char *path)
  * The return value should be 0 for success. */
 int FS_readlink(const char *path, char *buf, size_t size)
 {
+    _debug_print("FS : Called readlink\n");
+
     return 0;
 }
