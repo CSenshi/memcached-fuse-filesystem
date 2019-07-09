@@ -5,6 +5,10 @@
 
 #define INDEX_KEY_STR "_key_current_index_"
 
+#define MM_DIR 1 << 1
+#define MM_FILE 1 << 2
+#define MM_CHUNK 1 << 3
+
 typedef struct memcached
 {
     char *addr;
@@ -53,13 +57,13 @@ mm_data_info memcached_get(struct memcached *m, char *key);
 void memcached_flush(struct memcached *m);
 
 /* Saves new data in memcached */
-int memcached_add_struct(struct memcached *m, char *key, void *src, int size);
+int memcached_add_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
 
 /* Sets new data in memcached */
-int memcached_set_struct(struct memcached *m, char *key, void *src, int size);
+int memcached_set_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
 
 /* Replaces new data in memcached */
-int memcached_replace_struct(struct memcached *m, char *key, void *src, int size);
+int memcached_replace_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
 
 void memcached_exit(struct memcached *m);
 

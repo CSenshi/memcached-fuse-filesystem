@@ -190,13 +190,13 @@ void memcached_flush(struct memcached *m)
     char *resp = _recv_mm_resp(m->fd);
 }
 
-int memcached_add_struct(struct memcached *m, char *key, void *src, int size)
+int memcached_add_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
     info.key = key;
-    info.ttl = 0;
-    info.flags = 0;
+    info.ttl = ttl;
+    info.flags = flags;
     info.size = size;
 
     info.value = malloc(size + 1);
@@ -206,13 +206,13 @@ int memcached_add_struct(struct memcached *m, char *key, void *src, int size)
     return memcached_add(m, info);
 }
 
-int memcached_set_struct(struct memcached *m, char *key, void *src, int size)
+int memcached_set_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
     info.key = key;
-    info.ttl = 0;
-    info.flags = 0;
+    info.ttl = ttl;
+    info.flags = flags;
     info.size = size;
 
     info.value = malloc(size + 1);
@@ -222,13 +222,13 @@ int memcached_set_struct(struct memcached *m, char *key, void *src, int size)
     return memcached_set(m, info);
 }
 
-int memcached_replace_struct(struct memcached *m, char *key, void *src, int size)
+int memcached_replace_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
     info.key = key;
-    info.ttl = 0;
-    info.flags = 0;
+    info.ttl = ttl;
+    info.flags = flags;
     info.size = size;
 
     info.value = malloc(size + 1);
