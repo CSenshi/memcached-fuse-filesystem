@@ -1,6 +1,10 @@
 #include "filesys.h"
 
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <fuse.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -294,8 +298,37 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     struct memcached *m = (struct memcached *)(context->private_data);
 
     // ToDo: implement reading attributes
-    // int inode = get_inode(path, m);
-    return -2;
+    int inode = get_inode(path, m);
+
+    // file was not found
+    if (inode == -1)
+        return -ENOENT;
+
+    buf->st_uid = context->uid; // The owner of the file/directory is the user who mounted the filesystem
+    buf->st_gid = context->gid; // The group of the file/directory is the same as the group of the user who mounted the filesystem
+    buf->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
+    buf->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
+
+    mm_data_info info = memcached_get(m, int_to_str(inode));
+    if (info.flags && MM_DIR) // check if directory
+    {
+        dir *d = dir_mmch_getdir(inode, m);
+        memset(buf, 0, sizeof(struct stat));
+        buf->st_mode = S_IFDIR | 0755;
+        buf->st_nlink = 2;
+        buf->st_size = strlen(d->dir_name);
+        return 0;
+    }
+    else if (info.flags && MM_FILE) // check if file
+    {
+        buf->st_mode = S_IFREG | 0644;
+        buf->st_nlink = 1;
+        buf->st_size = 1024;
+    }
+    else //error
+    {
+        return -1;
+    }
 }
 
 /* Check file access permissions
