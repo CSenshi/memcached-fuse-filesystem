@@ -25,6 +25,18 @@ typedef struct dir
     mode_t mode;
 } dir;
 
+typedef struct dir_entry
+{
+    char *name;
+    int inode;
+} dir_entry;
+
+typedef struct dir_childs
+{
+    int n;
+    dir_entry **arr;
+} dir_childs;
+
 int dir_create(const char *, mode_t, memcached *);
 
 void dir_init(dir *, const char *, mode_t, memcached *);
@@ -33,4 +45,5 @@ void dir_append(int, dir *, memcached *);
 
 dir *dir_mmch_getdir(int, memcached *);
 
+dir_childs *dir_get_childs(dir *, memcached *);
 #endif // !DIR_H

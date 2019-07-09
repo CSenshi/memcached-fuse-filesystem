@@ -14,7 +14,7 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     if (new_dir->chunk_inode == -1)
         return -1;
 
-    int res = memcached_add_struct(m, int_to_str(new_dir->inode), new_dir, sizeof(dir));
+    int res = memcached_add_struct(m, int_to_str(new_dir->inode), new_dir, sizeof(dir), 0, MM_DIR);
 
     if (res == ERROR || res == NOT_STORED)
         return -1;
@@ -64,6 +64,61 @@ dir *dir_mmch_getdir(int inode, memcached *m)
     memcpy(dir, info.value, sizeof(struct dir));
 
     return dir;
+}
+
+dir_childs *dir_get_childs(dir *d, memcached *m)
+{
+    dir_childs *dc = malloc(sizeof(struct dir_childs));
+    memset(dc, 0, sizeof(struct dir_childs));
+    dc->n = 0;
+
+    char *s = chunk_read(d->chunk_inode, m);
+
+    int ind = 0;
+    while (s[ind] != '\0')
+    {
+        // get length 1
+        char *cp_len1 = malloc(OFF_LEN + 1);
+        memcpy(cp_len1, s + ind, OFF_LEN);
+        cp_len1[OFF_LEN] = '\0';
+        int len1 = str_to_int(cp_len1);
+        ind += OFF_LEN;
+
+        // get value 1;
+        char *val1 = malloc(len1 + 1);
+        memcpy(val1, s + ind, len1);
+        val1[len1] = '\0';
+        int inode = str_to_int(val1);
+        ind += len1;
+
+        // get length 2
+        char *cp_len2 = malloc(OFF_LEN + 1);
+        memcpy(cp_len2, s + ind, OFF_LEN);
+        cp_len2[OFF_LEN] = '\0';
+        int len2 = str_to_int(cp_len2);
+        ind += OFF_LEN;
+
+        // get value 2
+        char *val2 = malloc(len2 + 1);
+        memcpy(val2, s + ind, len2);
+        val2[len2] = '\0';
+        // printf("\n\n AAAAAAAAAAAAAA\n%s\n\n", val2);
+        ind += len2;
+
+        dir_entry *entry = malloc(sizeof(struct dir_entry));
+        entry->inode = inode;
+        entry->name = strdup(val2);
+
+        dc->n++;
+        dc->arr = realloc(dc->arr, sizeof(struct dir_entry *) * dc->n);
+        dc->arr[dc->n - 1] = entry;
+
+        free(cp_len1);
+        free(cp_len2);
+        free(val1);
+        free(val2);
+    }
+    return dc;
 }
 
 char *_create_dir_entry_str(dir *dir)
