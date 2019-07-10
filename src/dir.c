@@ -14,12 +14,15 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     if (new_dir->chunk_inode == -1)
         return -1;
 
-    int res = memcached_add_struct(m, int_to_str(new_dir->inode), new_dir, sizeof(dir), 0, MM_DIR);
+    int res = memcached_add_struct(m, path, new_dir, sizeof(struct dir), 0, MM_DIR);
 
     if (res == ERROR || res == NOT_STORED)
         return -1;
 
-    dir_append(new_dir->par_inode, new_dir, m);
+    char *par_path = get_par_path(path);
+
+    if (strcmp(path, "/"))
+        dir_append(par_path, new_dir, m);
 
     return 0;
 }
@@ -35,34 +38,31 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     parse_val prs = parse_path(path);
     memcpy(d->dir_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
 
-    // get next identifier
-    d->inode = get_next_index(m);
-
-    // ToDo: implement subdirectories
-    d->par_inode = ROOT_DIR_INODE;
-
     d->chunk_inode = chunk_create(m);
     d->mode = mode;
 }
 
-void dir_append(int par_inode, dir *new_dir, memcached *m)
+void dir_append(char *path, dir *new_dir, memcached *m)
 {
     char *str = _create_dir_entry_str(new_dir);
-    dir *par_dir = dir_mmch_getdir(par_inode, m);
+    dir *par_dir = dir_mmch_getdir(path, m);
     chunk *c = chunk_mmch_getchunk(par_dir->chunk_inode, m);
 
     chunk_write(c, str, strlen(str), m);
+    free(par_dir);
+    free(c);
 }
 
-dir *dir_mmch_getdir(int inode, memcached *m)
+dir *dir_mmch_getdir(const char *path, memcached *m)
 {
-    char *key = int_to_str(inode);
+    char *key = strdup(path);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
     dir *dir = malloc(sizeof(struct dir));
     memcpy(dir, info.value, sizeof(struct dir));
 
+    // free(key);
     return dir;
 }
 
@@ -75,6 +75,7 @@ dir_childs *dir_get_childs(dir *d, memcached *m)
     char *s = chunk_read(d->chunk_inode, m);
 
     int ind = 0;
+
     while (s[ind] != '\0')
     {
         // get length 1
@@ -88,50 +89,26 @@ dir_childs *dir_get_childs(dir *d, memcached *m)
         char *val1 = malloc(len1 + 1);
         memcpy(val1, s + ind, len1);
         val1[len1] = '\0';
-        int inode = str_to_int(val1);
         ind += len1;
 
-        // get length 2
-        char *cp_len2 = malloc(OFF_LEN + 1);
-        memcpy(cp_len2, s + ind, OFF_LEN);
-        cp_len2[OFF_LEN] = '\0';
-        int len2 = str_to_int(cp_len2);
-        ind += OFF_LEN;
-
-        // get value 2
-        char *val2 = malloc(len2 + 1);
-        memcpy(val2, s + ind, len2);
-        val2[len2] = '\0';
-        // printf("\n\n AAAAAAAAAAAAAA\n%s\n\n", val2);
-        ind += len2;
-
-        dir_entry *entry = malloc(sizeof(struct dir_entry));
-        entry->inode = inode;
-        entry->name = strdup(val2);
-
         dc->n++;
-        dc->arr = realloc(dc->arr, sizeof(struct dir_entry *) * dc->n);
-        dc->arr[dc->n - 1] = entry;
+        dc->arr = realloc(dc->arr, sizeof(char *) * dc->n);
+        dc->arr[dc->n - 1] = strdup(val1);
 
         free(cp_len1);
-        free(cp_len2);
         free(val1);
-        free(val2);
     }
+    // free(s);
     return dc;
 }
 
 char *_create_dir_entry_str(dir *dir)
 {
     // value 1 : inode
-    char *val1 = int_to_str(dir->inode);
+    char *val1 = dir->dir_name;
     int len1 = strlen(val1);
 
-    // value 2 : file name
-    char *val2 = dir->dir_name;
-    int len2 = strlen(val2);
-
-    int to_alloc = len1 + len2 + 2 * OFF_LEN + 1;
+    int to_alloc = len1 + OFF_LEN + 1;
     char *req = malloc(to_alloc);
     memset(req, '0', to_alloc);
 
@@ -139,11 +116,6 @@ char *_create_dir_entry_str(dir *dir)
     char *len1_str = int_to_str(len1);
     memcpy(req + OFF_LEN - strlen(len1_str), len1_str, strlen(len1_str));
     memcpy(req + OFF_LEN, val1, len1);
-
-    // fill dir name parameter
-    char *len2_str = int_to_str(len2);
-    memcpy(req + 2 * OFF_LEN + len1 - strlen(len2_str), len2_str, strlen(len2_str));
-    memcpy(req + 2 * OFF_LEN + len1, val2, len2);
 
     req[to_alloc - 1] = '\0';
     return req;
