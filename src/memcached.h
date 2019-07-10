@@ -6,8 +6,9 @@
 #define INDEX_KEY_STR "_key_current_index_"
 
 #define MM_DIR 1 << 1
-#define MM_FILE 1 << 2
-#define MM_CHUNK 1 << 3
+#define MM_FIL 1 << 2
+#define MM_CHN 1 << 3
+#define MM_CON 1 << 4
 
 typedef struct memcached
 {
