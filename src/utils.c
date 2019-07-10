@@ -61,24 +61,18 @@ int count_char(const char *str, char c)
     return count;
 }
 
-int get_inode(const char *path, memcached *m)
+char *get_par_path(const char *path)
 {
-    parse_val pv = parse_path(path);
-    int inode = ROOT_DIR_INODE;
-    dir *d = dir_mmch_getdir(ROOT_DIR_INODE, m);
+    int n = strlen(path);
 
-    for (int j = 1; j < pv.n; j++)
-    {
-        dir_childs *dc = dir_get_childs(d, m);
-        // printf("\n\n\n SSSSSSSAAAAAAAAAAAAS\n%s\n", pv.arr[j]);
-        for (int i = 0; i < dc->n; i++)
-        {
-            if (!strcmp(pv.arr[j], dc->arr[i]->name))
-                return dc->arr[i]->inode;
+    n--;
+    while (path[n] != '/')
+        n--;
 
-            // printf("INODE : %d, DIR NAME : %s \n", dc->arr[i]->inode, dc->arr[i]->name);
-        }
-    }
-
-    return -1;
+    if (n == 0)
+        return "/";
+    char *par_path = malloc(n + 1);
+    memcpy(par_path, path, n);
+    par_path[n] = '\0';
+    return par_path;
 }

@@ -21,6 +21,6 @@ int str_to_int(char *str);
 
 int count_char(const char *str, char c);
 
-int get_inode(const char *path, memcached *m);
+char *get_par_path(const char *path);
 
 #endif // !UTILS_H
