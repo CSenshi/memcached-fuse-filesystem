@@ -20,6 +20,10 @@
 
 int FS_COUNT = 0;
 
+int _FS_check(memcached *m);
+void _FS_new(memcached *m);
+void _FS_recreate(memcached *m);
+
 /*  Initialize filesystem
  *
  *  The return value will passed in the private_data field of struct fuse_context to all file operations,
@@ -35,17 +39,10 @@ void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
     struct memcached *m = malloc(sizeof(struct memcached));
     memcached_init(m);
 
-    // ToDo: Check if FileSystem is our type. if not flush
-    memcached_flush(m);
-
-    // Insert inode counter
-    char *index_key = int_to_str(INIT_INODE);
-    struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
-    memcached_add(m, index_info);
-
-    // Add Root Directory
-    mode_t root_mode = 0;
-    dir_create("/", root_mode, m);
+    if (_FS_check(m))
+        _FS_recreate(m);
+    else
+        _FS_new(m);
 
     return m;
 }
@@ -139,7 +136,7 @@ int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, s
     if (info.value == NULL)
         return -ENOENT;
 
-    if (info.flags && MM_DIR)
+    if (info.flags & MM_DIR)
     {
         dir *d = dir_mmch_getdir(path, m);
         dir_childs *dc = dir_get_childs(d, m);
@@ -340,7 +337,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     buf->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
 
     int err = 0;
-    if (info.flags && MM_DIR) // check if directory
+    if (info.flags & MM_DIR) // check if directory
     {
         dir *d = dir_mmch_getdir(path, m);
         memset(buf, 0, sizeof(struct stat));
@@ -349,7 +346,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
         buf->st_size = strlen(d->dir_name);
         free(d);
     }
-    else if (info.flags && MM_FILE) // check if file
+    else if (info.flags & MM_FILE) // check if file
     {
         buf->st_mode = S_IFREG | 0644;
         buf->st_nlink = 1;
@@ -457,4 +454,33 @@ int FS_readlink(const char *path, char *buf, size_t size)
     _debug_print_FS("%d FS : Called readlink\n", FS_COUNT++);
 
     return 0;
+}
+
+/* Private Functions */
+int _FS_check(memcached *m)
+{
+    struct mm_data_info info = memcached_get(m, INDEX_KEY_STR);
+    if (!info.value)
+        return 0;
+
+    return 1;
+}
+
+void _FS_new(memcached *m)
+{
+    memcached_flush(m);
+
+    // Insert inode counter
+    char *index_key = int_to_str(INIT_INODE);
+    struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
+    memcached_add(m, index_info);
+
+    // Add Root Directory
+    mode_t root_mode = 0;
+    dir_create("/", root_mode, m);
+}
+
+void _FS_recreate(memcached *m)
+{
+    (void)m;
 }
