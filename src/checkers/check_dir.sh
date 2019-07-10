@@ -48,6 +48,8 @@ iter_rec(){
     else
         echo $CMD ls
         ls
+        echo $CMD pwd
+        pwd
         echo
         
         echo $CMD cd dir_rec_$1
