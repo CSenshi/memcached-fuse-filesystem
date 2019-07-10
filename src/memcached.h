@@ -51,19 +51,19 @@ int memcached_increment(struct memcached *m, char *key, int n);
 int memcached_delete(struct memcached *m, char *key);
 
 /* Reads a value */
-mm_data_info memcached_get(struct memcached *m, char *key);
+mm_data_info memcached_get(struct memcached *m, const char *key);
 
 /* Invalidate all items immediately */
 void memcached_flush(struct memcached *m);
 
 /* Saves new data in memcached */
-int memcached_add_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
+int memcached_add_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags);
 
 /* Sets new data in memcached */
-int memcached_set_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
+int memcached_set_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags);
 
 /* Replaces new data in memcached */
-int memcached_replace_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags);
+int memcached_replace_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags);
 
 void memcached_exit(struct memcached *m);
 

@@ -22,7 +22,7 @@
 
 char *_create_str_request3(char *command, char *str1, char *str2);
 char *_create_struct_request(char *command, mm_data_info info);
-char *_create_str_request(char *command, char *str);
+char *_create_str_request(char *command, const char *str);
 mm_data_info _parse_resp(char *resp);
 void _send_mm_req(int fd, char *req, int size);
 void _append_ending(char **str, int size);
@@ -164,7 +164,7 @@ int memcached_delete(struct memcached *m, char *key)
     return result;
 }
 
-mm_data_info memcached_get(struct memcached *m, char *key)
+mm_data_info memcached_get(struct memcached *m, const char *key)
 {
     _debug_print("\n");
 
@@ -190,11 +190,11 @@ void memcached_flush(struct memcached *m)
     char *resp = _recv_mm_resp(m->fd);
 }
 
-int memcached_add_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
+int memcached_add_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
-    info.key = key;
+    info.key = strdup(key);
     info.ttl = ttl;
     info.flags = flags;
     info.size = size;
@@ -206,11 +206,11 @@ int memcached_add_struct(struct memcached *m, char *key, void *src, int size, in
     return memcached_add(m, info);
 }
 
-int memcached_set_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
+int memcached_set_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
-    info.key = key;
+    info.key = strdup(key);
     info.ttl = ttl;
     info.flags = flags;
     info.size = size;
@@ -222,11 +222,11 @@ int memcached_set_struct(struct memcached *m, char *key, void *src, int size, in
     return memcached_set(m, info);
 }
 
-int memcached_replace_struct(struct memcached *m, char *key, void *src, int size, int ttl, int flags)
+int memcached_replace_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags)
 {
     mm_data_info info;
 
-    info.key = key;
+    info.key = strdup(key);
     info.ttl = ttl;
     info.flags = flags;
     info.size = size;
@@ -274,7 +274,7 @@ char *_recv_mm_resp(int fd)
     return buffer;
 }
 
-char *_create_str_request(char *command, char *str)
+char *_create_str_request(char *command, const char *str)
 {
     int to_alloc = strlen(command) + strlen(str) + 1;
     char *req = malloc(to_alloc);
@@ -335,9 +335,10 @@ char *_create_struct_request(char *command, mm_data_info info)
 
 void _append_ending(char **str, int size)
 {
-    *str = realloc(*str, size + 2);
+    *str = realloc(*str, size + 3);
     (*str)[size] = '\r';
     (*str)[size + 1] = '\n';
+    (*str)[size + 2] = '\0';
 }
 
 mm_data_info _parse_resp(char *resp)
