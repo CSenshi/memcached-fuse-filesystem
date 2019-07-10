@@ -8,7 +8,7 @@ int chunk_create(memcached *m)
     chunk *new_chunk = malloc(sizeof(chunk));
     chunk_init(new_chunk, m);
 
-    int res = memcached_add_struct(m, int_to_str(new_chunk->inode), new_chunk, sizeof(struct chunk), 0, MM_CHUNK);
+    int res = memcached_add_struct(m, int_to_str(new_chunk->inode), new_chunk, sizeof(struct chunk), 0, MM_CHN);
 
     if (res == ERROR || res == NOT_STORED)
         return -1;
@@ -40,7 +40,7 @@ int chunk_write(chunk *c, void *data, int size, memcached *m)
     }
 
     int res = memcached_replace_struct(m, int_to_str(c->inode),
-                                       c, sizeof(struct chunk), 0, MM_CHUNK);
+                                       c, sizeof(struct chunk), 0, MM_CHN);
     return 0;
 }
 
