@@ -76,3 +76,17 @@ char *get_par_path(const char *path)
     par_path[n] = '\0';
     return par_path;
 }
+
+char *get_cur_path(const char *path)
+{
+    int n = strlen(path);
+
+    n--;
+    while (path[n] != '/')
+        n--;
+
+    char *cur_path = malloc(strlen(path) - n + 1);
+    memcpy(cur_path + n, path, strlen(path) - n);
+    cur_path[strlen(path) - n] = '\0';
+    return cur_path + 1;
+}

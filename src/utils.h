@@ -23,4 +23,6 @@ int count_char(const char *str, char c);
 
 char *get_par_path(const char *path);
 
+char *get_cur_path(const char *path);
+
 #endif // !UTILS_H
