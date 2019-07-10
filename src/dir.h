@@ -19,7 +19,7 @@ typedef struct dir
 {
     int _NOT_USED;
     char dir_name[MAX_FNAME];
-    int chunk_inode;
+    int content_inode;
     mode_t mode;
 } dir;
 
@@ -34,6 +34,8 @@ int dir_create(const char *, mode_t, memcached *);
 void dir_init(dir *, const char *, mode_t, memcached *);
 
 void dir_append(char *, dir *, memcached *);
+
+int dir_rmdir(const char *path, memcached *m);
 
 dir *dir_mmch_getdir(const char *, memcached *);
 
