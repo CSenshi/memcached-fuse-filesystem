@@ -128,6 +128,8 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
     else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
         return_val = NOT_STORED;
 
+    free(req);
+    free(val);
     free(res);
     return return_val;
 }
@@ -170,7 +172,6 @@ mm_data_info memcached_get(struct memcached *m, const char *key)
 
     char *req = _create_str_request("get", key);
     _append_ending(&req, strlen(req));
-
     _send_mm_req(m->fd, req, strlen(req));
     char *res = _recv_mm_resp(m->fd);
 
@@ -267,8 +268,8 @@ char *_recv_mm_resp(int fd)
     char *buffer = malloc(sizeof(char) * buff_size);
     memset(buffer, 0, sizeof(char) * buff_size);
 
-    int len = read(fd, buffer, buff_size);
-    buffer[len] = '\0';
+    int read_bytes = read(fd, buffer, buff_size);
+    buffer[read_bytes] = '\0';
 
     _debug_print("Response Recieved : %s", buffer);
     return buffer;
@@ -276,7 +277,7 @@ char *_recv_mm_resp(int fd)
 
 char *_create_str_request(char *command, const char *str)
 {
-    int to_alloc = strlen(command) + strlen(str) + 1;
+    int to_alloc = strlen(command) + strlen(str) + 2;
     char *req = malloc(to_alloc);
     memset(req, 0, to_alloc);
 
