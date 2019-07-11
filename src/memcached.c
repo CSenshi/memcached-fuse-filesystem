@@ -20,7 +20,7 @@
 #define DELETED_STR "DELETED"
 #define NOT_FOUND_STR "NOT_FOUND"
 
-char *_create_str_request3(char *command, char *str1, char *str2);
+char *_create_str_request3(char *command, const char *str1, char *str2);
 char *_create_struct_request(char *command, mm_data_info info);
 char *_create_str_request(char *command, const char *str);
 mm_data_info _parse_resp(char *resp);
@@ -134,7 +134,7 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
     return return_val;
 }
 
-int memcached_increment(struct memcached *m, char *key, int n)
+int memcached_increment(struct memcached *m, const char *key, int n)
 {
     _debug_print("\n");
 
@@ -147,7 +147,7 @@ int memcached_increment(struct memcached *m, char *key, int n)
     return str_to_int(res);
 }
 
-int memcached_delete(struct memcached *m, char *key)
+int memcached_delete(struct memcached *m, const char *key)
 {
     _debug_print("\n");
 
@@ -288,7 +288,7 @@ char *_create_str_request(char *command, const char *str)
     return req;
 }
 
-char *_create_str_request3(char *command, char *str1, char *str2)
+char *_create_str_request3(char *command, const char *str1, char *str2)
 {
     int to_alloc = strlen(command) + strlen(str1) + strlen(str2) + 1;
     char *req = malloc(to_alloc);

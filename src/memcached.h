@@ -46,10 +46,10 @@ int memcached_set(struct memcached *m, struct mm_data_info info);
 int memcached_replace(struct memcached *m, struct mm_data_info info);
 
 /* Increments key by one */
-int memcached_increment(struct memcached *m, char *key, int n);
+int memcached_increment(struct memcached *m, const char *key, int n);
 
 /* Deletes an existing key */
-int memcached_delete(struct memcached *m, char *key);
+int memcached_delete(struct memcached *m, const char *key);
 
 /* Reads a value */
 mm_data_info memcached_get(struct memcached *m, const char *key);
