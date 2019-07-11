@@ -2,7 +2,7 @@
 #include "chunk.h"
 #include "utils.h"
 
-chunk *_content_get_chunk(int n, content *cn, memcached *m);
+chunk _content_get_chunk(int n, content *cn, memcached *m);
 
 int content_create(memcached *m)
 {
@@ -52,7 +52,7 @@ int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
     if (off_t < C_DIRR * DATA_SIZE)
     {
         int dirr_ind = off_t / C_DIRR, ind = off_t % C_DIRR;
-        chunk *c = chunk_mmch_getchunk(cn->DIRR_inode[dirr_ind], m);
+        chunk c = chunk_mmch_getchunk(cn->DIRR_inode[dirr_ind], m);
 
         // while ()
     }
@@ -63,8 +63,8 @@ int content_write(content *cn, int off_t, int size, char *buf, memcached *m)
     if (size == 0)
         return 0;
 
-    chunk *c = _content_get_chunk(off_t, cn, m);
-    int written_bytes = chunk_write(c, buf, size, m);
+    chunk c = _content_get_chunk(off_t, cn, m);
+    int written_bytes = chunk_write(&c, buf, size, m);
     cn->size += written_bytes;
     memcached_replace_struct(m, int_to_str(cn->inode), cn, sizeof(struct content), 0, MM_CON);
     return written_bytes;
@@ -83,38 +83,38 @@ int content_append(content *cn, int size, char *buf, memcached *m)
 
 int content_read_full_chunk(content *cn, int ch_num, char *buf, memcached *m)
 {
-    chunk *ch = _content_get_chunk(DATA_SIZE * ch_num, cn, m);
-    memcpy(buf, ch->data, ch->ind);
-    return ch->ind;
+    chunk ch = _content_get_chunk(DATA_SIZE * ch_num, cn, m);
+    memcpy(buf, ch.data, ch.ind);
+    return ch.ind;
 }
 
-content *content_mmch_getcontent(int inode, memcached *m)
+content content_mmch_getcontent(int inode, memcached *m)
 {
     char *key = int_to_str(inode);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
-    content *cn = malloc(sizeof(struct content));
-    memcpy(cn, info.value, sizeof(struct content));
+    content cn;
+    memcpy(&cn, info.value, sizeof(struct content));
 
     return cn;
 }
 
-chunk *_content_get_chunk(int n, content *cn, memcached *m)
+chunk _content_get_chunk(int n, content *cn, memcached *m)
 {
+    struct chunk res;
     if (n < DATA_SIZE * C_DIRR)
     {
         n = n / DATA_SIZE;
         if (!cn->DIRR_inode[n])
             cn->DIRR_inode[n] = chunk_create(m);
-        return chunk_mmch_getchunk(cn->DIRR_inode[n], m);
+        res = chunk_mmch_getchunk(cn->DIRR_inode[n], m);
     }
     else
     {
         // ToDo Indirects
     }
-
-    return NULL;
+    return res;
 }
 
 void content_free(int inode, memcached *m)

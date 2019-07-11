@@ -46,11 +46,10 @@ void dir_append(char *path, dir *new_dir, memcached *m)
 {
     char *str = _create_dir_entry_str(new_dir);
     dir par_dir = dir_mmch_getdir(path, m);
-    content *cn = content_mmch_getcontent(par_dir.content_inode, m);
-    content_append(cn, strlen(str), str, m);
+    content cn = content_mmch_getcontent(par_dir.content_inode, m);
+    content_append(&cn, strlen(str), str, m);
 
     free(str);
-    free(cn);
 }
 
 dir dir_mmch_getdir(const char *path, memcached *m)
@@ -72,38 +71,52 @@ int dir_rmdir(const char *path, memcached *m)
     char *cur_path = get_cur_path(path);
     dir pd = dir_mmch_getdir(par_path, m);
     dir_childs dc = dir_get_childs(&pd, m);
-    content_free(pd.content_inode, m);
-    pd.content_inode = content_create(m);
-    content *cn = content_mmch_getcontent(pd.content_inode, m);
+    int ind = -1;
 
-    int res = -1;
-    char str[1500] = {0};
-    dir d;
     for (int i = 0; i < dc.n; i++)
     {
         char *cur_child = dc.arr[i];
         if (!strcmp(cur_child, cur_path))
         {
-            memcached_delete(m, path);
-            res = 0;
-        }
-        else
-        {
-            memcpy(d.dir_name, cur_child, strlen(cur_child) + 1);
-            char *child_str = _create_dir_entry_str(&d);
-            memcpy(str + strlen(str), child_str, strlen(child_str));
-
-            if (strlen(str) > 30)
+            dir d = dir_mmch_getdir(path, m);
+            content dir_con = content_mmch_getcontent(d.content_inode, m);
+            if (dir_con.size != 0)
             {
-                content_append(cn, strlen(str), str, m);
-                memset(str, 0, 1500);
+                // NOT EMPTY
+                return -1;
             }
+            memcached_delete(m, path);
+            ind = i;
+        }
+    }
+    if (ind == -1)
+        return -1;
+    content_free(pd.content_inode, m);
+    pd.content_inode = content_create(m);
+    content cn = content_mmch_getcontent(pd.content_inode, m);
+
+    char str[1500] = {0};
+    dir d;
+    for (int i = 0; i < dc.n; i++)
+    {
+        if (ind == i)
+            continue;
+        char *cur_child = dc.arr[i];
+
+        memcpy(d.dir_name, cur_child, strlen(cur_child) + 1);
+        char *child_str = _create_dir_entry_str(&d);
+        memcpy(str + strlen(str), child_str, strlen(child_str));
+
+        if (strlen(str) > 30)
+        {
+            content_append(&cn, strlen(str), str, m);
+            memset(str, 0, 1500);
         }
     }
     if (strlen(str) != 0)
-        content_append(cn, strlen(str), str, m);
+        content_append(&cn, strlen(str), str, m);
     memcached_replace_struct(m, pd.dir_name, &pd, sizeof(struct dir), 0, MM_DIR);
-    return res;
+    return 0;
 }
 
 dir_childs dir_get_childs(dir *d, memcached *m)
@@ -112,10 +125,10 @@ dir_childs dir_get_childs(dir *d, memcached *m)
     memset(&dc, 0, sizeof(struct dir_childs));
     dc.n = 0;
 
-    content *cn = content_mmch_getcontent(d->content_inode, m);
+    content cn = content_mmch_getcontent(d->content_inode, m);
     char s[2 * DATA_SIZE] = {0};
-    int read_data = content_read_full_chunk(cn, 0, s, m);
-    read_data += content_read_full_chunk(cn, 1, s + DATA_SIZE, m);
+    int read_data = content_read_full_chunk(&cn, 0, s, m);
+    read_data += content_read_full_chunk(&cn, 1, s + DATA_SIZE, m);
     int ind = 0;
 
     int chunk_ind = 1;
@@ -143,7 +156,7 @@ dir_childs dir_get_childs(dir *d, memcached *m)
             memmove(s, s + DATA_SIZE, DATA_SIZE);
             ind -= DATA_SIZE;
             read_data -= DATA_SIZE;
-            read_data += content_read_full_chunk(cn, chunk_ind, s + DATA_SIZE, m);
+            read_data += content_read_full_chunk(&cn, chunk_ind, s + DATA_SIZE, m);
         }
         free(cp_len1);
         free(val1);

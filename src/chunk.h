@@ -27,6 +27,6 @@ int chunk_write(chunk *, void *, int, memcached *);
 char *chunk_read(int, memcached *);
 
 /* Return chunk with given inode */
-chunk *chunk_mmch_getchunk(int inode, memcached *m);
+chunk chunk_mmch_getchunk(int inode, memcached *m);
 
 #endif // !DATA_H

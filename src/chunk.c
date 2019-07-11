@@ -49,14 +49,14 @@ char *chunk_read(int inode, memcached *m)
     return c->data;
 }
 
-chunk *chunk_mmch_getchunk(int inode, memcached *m)
+chunk chunk_mmch_getchunk(int inode, memcached *m)
 {
     char *key = int_to_str(inode);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
-    chunk *c = malloc(sizeof(struct chunk));
-    memcpy(c, info.value, sizeof(struct chunk));
+    chunk c;
+    memcpy(&c, info.value, sizeof(struct chunk));
 
     return c;
 }
