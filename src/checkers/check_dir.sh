@@ -93,10 +93,10 @@ test3(){
 
 
 test4(){
-    echo "Test 3 : Creating directories with large names ..."
+    echo "Test 4 : Creating directories with large names ..."
     
     len=128
-    chars="A B C D E F G H I K L M N O P Q R S T U W Y X Z"
+    chars="A B C D E F G H I J K L M N O P Q R S T U V X Y Z "
     for a in $chars; do
         dir_name=$a
         for i in $(seq 1 $len);
@@ -111,9 +111,50 @@ test4(){
     echo
 }
 
+
+test5(){
+    echo "Test 3 : Testing Rmdir ..."
+    
+    echo mkdir dir1 dir2 dir3 dir_to_rem1 dir_to_rem2
+    mkdir dir1 dir2 dir3 dir_to_rem1 dir_to_rem2
+    echo
+    
+    echo ls
+    ls
+    echo
+    
+    echo rmdir dir_to_rem1
+    rmdir dir_to_rem1
+    echo
+    
+    echo rmdir dir_to_rem2
+    rmdir dir_to_rem2
+    echo
+    
+    echo rmdir NO_DIR
+    rmdir NO_DIR
+    echo
+    
+    echo mkdir subdir1 subdir1/subdir2 subdir1/subdir2/subdir3
+    mkdir subdir1 subdir1/subdir2 subdir1/subdir2/subdir3
+    echo
+    
+    echo "!!! Trying to delete non empty directory !!!"
+    echo rmdir subdir1
+    rmdir subdir1
+    echo
+    
+    echo ls
+    ls
+    echo
+    
+    echo "Done!"
+    echo
+}
+
 TOTAL_DIR_NUM=10
 
-# Base Test Make 10 Directories
+Base Test Make 10 Directories
 test1 $TOTAL_DIR_NUM
 
 # Create 10 Subdirectories
@@ -121,6 +162,9 @@ test2 $TOTAL_DIR_NUM
 
 # pwd and ls
 test3 $TOTAL_DIR_NUM
+
+# Checking rmdir
+test5
 
 # Create Folders with large name
 test4
