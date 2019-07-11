@@ -1,7 +1,7 @@
 #include "content.h"
 #include "chunk.h"
 #include "utils.h"
-
+#include <math.h>
 chunk _content_get_chunk(int n, content *cn, memcached *m);
 
 int content_create(memcached *m)
@@ -38,7 +38,6 @@ void content_init(content *cn, memcached *m)
     memset(cn->DIRR_inode, 0, sizeof(int) * C_IND1);
     memset(cn->IND1_inode, 0, sizeof(int) * C_IND1);
     memset(cn->IND2_inode, 0, sizeof(int) * C_IND2);
-    memset(cn->IND3_inode, 0, sizeof(int) * C_IND3);
 
     cn->DIRR_inode[0] = chunk_create(m);
 }
@@ -63,7 +62,7 @@ int content_write(content *cn, int off_t, int size, char *buf, memcached *m)
     if (size == 0)
         return 0;
 
-    chunk c = _content_get_chunk(off_t, cn, m);
+    chunk c = _content_get_chunk(off_t / DATA_SIZE, cn, m);
     int written_bytes = chunk_write(&c, buf, size, m);
     cn->size += written_bytes;
     memcached_replace_struct(m, int_to_str(cn->inode), cn, sizeof(struct content), 0, MM_CON);
@@ -83,7 +82,7 @@ int content_append(content *cn, int size, char *buf, memcached *m)
 
 int content_read_full_chunk(content *cn, int ch_num, char *buf, memcached *m)
 {
-    chunk ch = _content_get_chunk(DATA_SIZE * ch_num, cn, m);
+    chunk ch = _content_get_chunk(ch_num, cn, m);
     memcpy(buf, ch.data, ch.ind);
     return ch.ind;
 }
@@ -103,16 +102,37 @@ content content_mmch_getcontent(int inode, memcached *m)
 chunk _content_get_chunk(int n, content *cn, memcached *m)
 {
     struct chunk res;
-    if (n < DATA_SIZE * C_DIRR)
+
+    if (n < C_DIRR)
     {
-        n = n / DATA_SIZE;
         if (!cn->DIRR_inode[n])
             cn->DIRR_inode[n] = chunk_create(m);
         res = chunk_mmch_getchunk(cn->DIRR_inode[n], m);
     }
-    else
+    else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1))
     {
-        // ToDo Indirects
+        n -= C_DIRR;
+
+        int ind = n / pow(DATA_SIZE / sizeof(int), 1);
+        if (!cn->IND1_inode[ind])
+            cn->IND1_inode[ind] = chunk_create(m);
+
+        chunk c = chunk_mmch_getchunk(cn->IND1_inode[ind], m);
+        int arr[DATA_SIZE / sizeof(int)];
+        memcpy(arr, c.data, DATA_SIZE);
+
+        int ind2 = n % (DATA_SIZE / sizeof(int));
+        if (!arr[ind2])
+        {
+            arr[ind2] = chunk_create(m);
+            memcpy(c.data, arr, DATA_SIZE);
+            memcached_replace_struct(m, int_to_str(c.inode), &c, sizeof(struct chunk), 0, MM_CHN);
+        }
+        return chunk_mmch_getchunk(arr[ind2], m);
+    }
+    else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1) + C_IND2 * pow(DATA_SIZE / sizeof(int), 2) * DATA_SIZE)
+    {
+        // ToDo Implement Double Indirect
     }
     return res;
 }

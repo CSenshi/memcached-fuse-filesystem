@@ -9,10 +9,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define C_DIRR 10
+#define C_DIRR 50
 #define C_IND1 10
-#define C_IND2 2
-#define C_IND3 1
+#define C_IND2 30
 
 typedef struct content
 {
@@ -26,7 +25,6 @@ typedef struct content
     /* Indirect Addressing of chunks */
     int IND1_inode[C_IND1];
     int IND2_inode[C_IND2];
-    int IND3_inode[C_IND3];
 } content;
 
 int content_create(memcached *);
