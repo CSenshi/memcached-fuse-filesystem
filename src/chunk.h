@@ -9,7 +9,6 @@ typedef struct chunk
 {
     int _NOT_USED;
 
-    int next_chunk_inode;
     char data[DATA_SIZE];
     int ind;
     int inode;

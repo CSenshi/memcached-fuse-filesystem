@@ -24,27 +24,20 @@ void chunk_init(chunk *chunk, memcached *m)
     chunk->_NOT_USED = -1;
     chunk->inode = get_next_index(m);
     chunk->ind = 0;
-    chunk->next_chunk_inode = -1;
-}
-
-int chunk_write(chunk *c, void *data, int size, memcached *m)
-{
-    if (c->ind + size < DATA_SIZE)
-    {
-        memcpy(c->data + c->ind, data, size);
-        c->ind += size;
-    }
-    else
-    {
-        // ToDo: Implement linked list chunk
-    }
-
-    int res = memcached_replace_struct(m, int_to_str(c->inode),
-                                       c, sizeof(struct chunk), 0, MM_CHN);
-    return 0;
 }
 
 /* Writes data into chunk */
+int chunk_write(chunk *c, void *data, int size, memcached *m)
+{
+    int bytes_to_write = c->ind + size > DATA_SIZE ? DATA_SIZE - c->ind : size;
+
+    memcpy(c->data + c->ind, data, bytes_to_write);
+    c->ind += bytes_to_write;
+    int res = memcached_replace_struct(m, int_to_str(c->inode),
+                                       c, sizeof(struct chunk), 0, MM_CHN);
+    return bytes_to_write;
+}
+
 char *chunk_read(int inode, memcached *m)
 {
     // TODO IMPORTANT : CHANGE READING!!!!!!!
