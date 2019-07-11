@@ -43,4 +43,6 @@ int content_read_full_chunk(content *, int, char *, memcached *);
 
 content *content_mmch_getcontent(int inode, memcached *m);
 
+void content_free(int inode, memcached *m);
+
 #endif // !CONTENT_H

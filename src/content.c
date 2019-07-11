@@ -116,3 +116,8 @@ chunk *_content_get_chunk(int n, content *cn, memcached *m)
 
     return NULL;
 }
+
+void content_free(int inode, memcached *m)
+{
+    return;
+}
