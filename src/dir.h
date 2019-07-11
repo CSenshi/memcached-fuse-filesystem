@@ -37,7 +37,7 @@ void dir_append(char *, dir *, memcached *);
 
 int dir_rmdir(const char *path, memcached *m);
 
-dir *dir_mmch_getdir(const char *, memcached *);
+dir dir_mmch_getdir(const char *, memcached *);
 
 dir_childs dir_get_childs(dir *d, memcached *m);
 

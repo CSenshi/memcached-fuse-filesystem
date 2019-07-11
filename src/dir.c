@@ -33,7 +33,6 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     memset(d, 0, sizeof(struct dir));
 
     d->_NOT_USED = -1;
-    // d->child_count = 0;
 
     //parse
     parse_val prs = parse_path(path);
@@ -46,23 +45,22 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
 void dir_append(char *path, dir *new_dir, memcached *m)
 {
     char *str = _create_dir_entry_str(new_dir);
-    dir *par_dir = dir_mmch_getdir(path, m);
-    content *cn = content_mmch_getcontent(par_dir->content_inode, m);
+    dir par_dir = dir_mmch_getdir(path, m);
+    content *cn = content_mmch_getcontent(par_dir.content_inode, m);
     content_append(cn, strlen(str), str, m);
 
     free(str);
-    free(par_dir);
     free(cn);
 }
 
-dir *dir_mmch_getdir(const char *path, memcached *m)
+dir dir_mmch_getdir(const char *path, memcached *m)
 {
     char *key = strdup(path);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
-    dir *dir = malloc(sizeof(struct dir));
-    memcpy(dir, info.value, info.size);
+    dir dir;
+    memcpy(&dir, info.value, info.size);
 
     // free(key);
     return dir;
@@ -70,37 +68,42 @@ dir *dir_mmch_getdir(const char *path, memcached *m)
 
 int dir_rmdir(const char *path, memcached *m)
 {
-    //     char *par_path = get_par_path(path);
-    //     char *cur_path = get_cur_path(path);
-    //     dir *pd = dir_mmch_getdir(par_path, m);
-    //     dir_childs *dc = dir_get_childs(pd, m);
+    char *par_path = get_par_path(path);
+    char *cur_path = get_cur_path(path);
+    dir pd = dir_mmch_getdir(par_path, m);
+    dir_childs dc = dir_get_childs(&pd, m);
+    content_free(pd.content_inode, m);
+    pd.content_inode = content_create(m);
+    content *cn = content_mmch_getcontent(pd.content_inode, m);
 
-    //     int res = -1;
-    //     char *str;
-    //     dir *d = malloc(sizeof(struct dir));
-    //     for (int i = 0; i < dc->n; i++)
-    //     {
-    //         char *cur_child = dc->arr[i];
-    //         printf("EEEEEEEEEEEEEn\n\n%s\n%s\n", cur_child, cur_path);
-    //         if (!strcmp(cur_child, cur_path))
-    //         {
-    //             res = 0;
-    //         }
-    //         else
-    //         {
-    //             memcpy(d->dir_name, cur_child, strlen(cur_child) + 1);
-    //             char *child_str = _create_dir_entry_str(d);
-    //             int len = str ? strlen(str) : 0;
-    //             str = realloc(str, len + strlen(child_str));
-    //             memcpy(str + len, child_str, strlen(child_str));
-    //         }
-    //     }
+    int res = -1;
+    char str[1500] = {0};
+    dir d;
+    for (int i = 0; i < dc.n; i++)
+    {
+        char *cur_child = dc.arr[i];
+        if (!strcmp(cur_child, cur_path))
+        {
+            memcached_delete(m, path);
+            res = 0;
+        }
+        else
+        {
+            memcpy(d.dir_name, cur_child, strlen(cur_child) + 1);
+            char *child_str = _create_dir_entry_str(&d);
+            memcpy(str + strlen(str), child_str, strlen(child_str));
 
-    //     chunk *c = chunk_mmch_getchunk(pd->content_inode, m);
-
-    //     chunk_reset(c, m);
-    //     chunk_write(c, str, strlen(str), m);
-    //     return res;
+            if (strlen(str) > 30)
+            {
+                content_append(cn, strlen(str), str, m);
+                memset(str, 0, 1500);
+            }
+        }
+    }
+    if (strlen(str) != 0)
+        content_append(cn, strlen(str), str, m);
+    memcached_replace_struct(m, pd.dir_name, &pd, sizeof(struct dir), 0, MM_DIR);
+    return res;
 }
 
 dir_childs dir_get_childs(dir *d, memcached *m)
