@@ -2,7 +2,7 @@
 #define DIR_H
 
 #define CHILD_C 100
-#define MAX_FNAME 128
+#define MAX_FNAME 256
 
 #include "memcached.h"
 #include <stdio.h>
@@ -39,6 +39,6 @@ int dir_rmdir(const char *path, memcached *m);
 
 dir *dir_mmch_getdir(const char *, memcached *);
 
-dir_childs *dir_get_childs(dir *, memcached *);
+dir_childs dir_get_childs(dir *d, memcached *m);
 
 #endif // !DIR_H

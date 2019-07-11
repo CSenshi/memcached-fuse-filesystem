@@ -14,7 +14,6 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     dir_init(new_dir, path, mode, m);
     if (new_dir->content_inode == -1)
         return -1;
-
     int res = memcached_add_struct(m, path, new_dir, sizeof(struct dir), 0, MM_DIR);
 
     if (res == ERROR || res == NOT_STORED)
@@ -34,6 +33,7 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     memset(d, 0, sizeof(struct dir));
 
     d->_NOT_USED = -1;
+    // d->child_count = 0;
 
     //parse
     parse_val prs = parse_path(path);
@@ -47,10 +47,10 @@ void dir_append(char *path, dir *new_dir, memcached *m)
 {
     char *str = _create_dir_entry_str(new_dir);
     dir *par_dir = dir_mmch_getdir(path, m);
-
     content *cn = content_mmch_getcontent(par_dir->content_inode, m);
     content_append(cn, strlen(str), str, m);
 
+    free(str);
     free(par_dir);
     free(cn);
 }
@@ -62,7 +62,7 @@ dir *dir_mmch_getdir(const char *path, memcached *m)
 
     // copy given value into
     dir *dir = malloc(sizeof(struct dir));
-    memcpy(dir, info.value, sizeof(struct dir));
+    memcpy(dir, info.value, info.size);
 
     // free(key);
     return dir;
@@ -103,18 +103,20 @@ int dir_rmdir(const char *path, memcached *m)
     //     return res;
 }
 
-dir_childs *dir_get_childs(dir *d, memcached *m)
+dir_childs dir_get_childs(dir *d, memcached *m)
 {
-    dir_childs *dc = malloc(sizeof(struct dir_childs));
-    memset(dc, 0, sizeof(struct dir_childs));
-    dc->n = 0;
-    content *cn = content_mmch_getcontent(d->content_inode, m);
-    char s[DATA_SIZE];
-    int read_data = content_read_full_chunk(cn, 0, s, m);
+    dir_childs dc;
+    memset(&dc, 0, sizeof(struct dir_childs));
+    dc.n = 0;
 
+    content *cn = content_mmch_getcontent(d->content_inode, m);
+    char s[2 * DATA_SIZE] = {0};
+    int read_data = content_read_full_chunk(cn, 0, s, m);
+    read_data += content_read_full_chunk(cn, 1, s + DATA_SIZE, m);
     int ind = 0;
 
-    while (ind != read_data)
+    int chunk_ind = 1;
+    while (ind < read_data)
     {
         // get length 1
         char *cp_len1 = malloc(OFF_LEN + 1);
@@ -128,17 +130,21 @@ dir_childs *dir_get_childs(dir *d, memcached *m)
         memcpy(val1, s + ind, len1);
         val1[len1] = '\0';
         ind += len1;
+        dc.n++;
+        dc.arr = realloc(dc.arr, sizeof(char *) * dc.n);
+        dc.arr[dc.n - 1] = strdup(val1);
 
-        dc->n++;
-        printf("SSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n\n");
-        dc->arr = realloc(dc->arr, sizeof(char *) * dc->n);
-        printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n");
-        dc->arr[dc->n - 1] = strdup(val1);
-
+        if (DATA_SIZE < ind)
+        {
+            chunk_ind++;
+            memmove(s, s + DATA_SIZE, DATA_SIZE);
+            ind -= DATA_SIZE;
+            read_data -= DATA_SIZE;
+            read_data += content_read_full_chunk(cn, chunk_ind, s + DATA_SIZE, m);
+        }
         free(cp_len1);
         free(val1);
     }
-    // free(s);
     return dc;
 }
 
