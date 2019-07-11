@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define C_DIRR 50
+#define C_DIRR 10
 #define C_IND1 10
 #define C_IND2 30
 
@@ -33,7 +33,7 @@ void content_init(content *, memcached *);
 
 int content_read(content *, int, int, char *, memcached *);
 
-int content_write(content *, int, int, char *, memcached *);
+int content_write(content *, int, int, const char *, memcached *);
 
 int content_append(content *, int, char *, memcached *);
 

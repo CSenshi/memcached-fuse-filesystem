@@ -3,7 +3,7 @@
 
 #include "memcached.h"
 
-#define DATA_SIZE 1024
+#define DATA_SIZE 4096
 
 typedef struct chunk
 {
@@ -15,16 +15,16 @@ typedef struct chunk
 } chunk;
 
 /* Creates empty chunk */
-int chunk_create(memcached *);
+int chunk_create(chunk *, memcached *);
 
 /* Initializes chunk */
 void chunk_init(chunk *, memcached *);
 
 /* Writes data into chunk */
-int chunk_write(chunk *, void *, int, memcached *);
+int chunk_write(chunk *, const void *, int, memcached *);
 
-/* Writes data into chunk */
-char *chunk_read(int, memcached *);
+/* Reads data from chunk to buf */
+int chunk_read(chunk *c, int, char *, int, memcached *);
 
 /* Return chunk with given inode */
 chunk chunk_mmch_getchunk(int inode, memcached *m);

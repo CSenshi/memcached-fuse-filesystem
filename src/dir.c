@@ -5,16 +5,16 @@
 
 #define OFF_LEN 10
 
-char *_create_dir_entry_str(dir *);
+char *_create_dir_entry_str(char *);
 
 int dir_create(const char *path, mode_t mode, memcached *m)
 {
-    dir *new_dir = malloc(sizeof(dir));
+    dir new_dir;
+    dir_init(&new_dir, path, mode, m);
 
-    dir_init(new_dir, path, mode, m);
-    if (new_dir->content_inode == -1)
+    if (new_dir.content_inode == -1)
         return -1;
-    int res = memcached_add_struct(m, path, new_dir, sizeof(struct dir), 0, MM_DIR);
+    int res = memcached_add_struct(m, path, &new_dir, sizeof(struct dir), 0, MM_DIR);
 
     if (res == ERROR || res == NOT_STORED)
         return -1;
@@ -22,7 +22,7 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     char *par_path = get_par_path(path);
 
     if (strcmp(path, "/"))
-        dir_append(par_path, new_dir, m);
+        dir_append(par_path, new_dir.dir_name, m);
 
     return 0;
 }
@@ -42,9 +42,9 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     d->mode = mode;
 }
 
-void dir_append(char *path, dir *new_dir, memcached *m)
+void dir_append(char *path, char *elem, memcached *m)
 {
-    char *str = _create_dir_entry_str(new_dir);
+    char *str = _create_dir_entry_str(elem);
     dir par_dir = dir_mmch_getdir(path, m);
     content cn = content_mmch_getcontent(par_dir.content_inode, m);
     content_append(&cn, strlen(str), str, m);
@@ -54,14 +54,14 @@ void dir_append(char *path, dir *new_dir, memcached *m)
 
 dir dir_mmch_getdir(const char *path, memcached *m)
 {
-    char *key = strdup(path);
+    char key[strlen(path) + 1];
+    memcpy(key, path, strlen(path) + 1);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
     dir dir;
     memcpy(&dir, info.value, info.size);
 
-    // free(key);
     return dir;
 }
 
@@ -104,7 +104,7 @@ int dir_rmdir(const char *path, memcached *m)
         char *cur_child = dc.arr[i];
 
         memcpy(d.dir_name, cur_child, strlen(cur_child) + 1);
-        char *child_str = _create_dir_entry_str(&d);
+        char *child_str = _create_dir_entry_str(d.dir_name);
         memcpy(str + strlen(str), child_str, strlen(child_str));
 
         if (strlen(str) > 30)
@@ -164,10 +164,10 @@ dir_childs dir_get_childs(dir *d, memcached *m)
     return dc;
 }
 
-char *_create_dir_entry_str(dir *dir)
+char *_create_dir_entry_str(char *elem)
 {
     // value 1 : inode
-    char *val1 = dir->dir_name;
+    char *val1 = elem;
     int len1 = strlen(val1);
 
     int to_alloc = len1 + OFF_LEN + 1;

@@ -39,7 +39,8 @@ void content_init(content *cn, memcached *m)
     memset(cn->IND1_inode, 0, sizeof(int) * C_IND1);
     memset(cn->IND2_inode, 0, sizeof(int) * C_IND2);
 
-    cn->DIRR_inode[0] = chunk_create(m);
+    chunk c;
+    cn->DIRR_inode[0] = chunk_create(&c, m);
 }
 
 int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
@@ -48,16 +49,19 @@ int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
         return 0;
 
     // Read Data From Direct Blocks
-    if (off_t < C_DIRR * DATA_SIZE)
+    int b = 0;
+    chunk c = _content_get_chunk(off_t / DATA_SIZE, cn, m);
+    int read_bytes = chunk_read(&c, off_t % DATA_SIZE, buf, size, m);
+    while (read_bytes < size && c.ind == DATA_SIZE)
     {
-        int dirr_ind = off_t / C_DIRR, ind = off_t % C_DIRR;
-        chunk c = chunk_mmch_getchunk(cn->DIRR_inode[dirr_ind], m);
-
-        // while ()
+        c = _content_get_chunk((off_t + read_bytes) / DATA_SIZE, cn, m);
+        b = chunk_read(&c, 0, buf + read_bytes, size - read_bytes, m);
+        read_bytes += b;
     }
+    return read_bytes;
 }
 
-int content_write(content *cn, int off_t, int size, char *buf, memcached *m)
+int content_write(content *cn, int off_t, int size, const char *buf, memcached *m)
 {
     if (size == 0)
         return 0;
@@ -106,29 +110,36 @@ chunk _content_get_chunk(int n, content *cn, memcached *m)
     if (n < C_DIRR)
     {
         if (!cn->DIRR_inode[n])
-            cn->DIRR_inode[n] = chunk_create(m);
-        res = chunk_mmch_getchunk(cn->DIRR_inode[n], m);
+            cn->DIRR_inode[n] = chunk_create(&res, m);
+        else
+            res = chunk_mmch_getchunk(cn->DIRR_inode[n], m);
+        return res;
     }
     else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1))
     {
         n -= C_DIRR;
 
+        chunk c;
         int ind = n / pow(DATA_SIZE / sizeof(int), 1);
         if (!cn->IND1_inode[ind])
-            cn->IND1_inode[ind] = chunk_create(m);
-
-        chunk c = chunk_mmch_getchunk(cn->IND1_inode[ind], m);
+            cn->IND1_inode[ind] = chunk_create(&c, m);
+        else
+            c = chunk_mmch_getchunk(cn->IND1_inode[ind], m);
         int arr[DATA_SIZE / sizeof(int)];
         memcpy(arr, c.data, DATA_SIZE);
 
         int ind2 = n % (DATA_SIZE / sizeof(int));
         if (!arr[ind2])
         {
-            arr[ind2] = chunk_create(m);
+            arr[ind2] = chunk_create(&res, m);
             memcpy(c.data, arr, DATA_SIZE);
             memcached_replace_struct(m, int_to_str(c.inode), &c, sizeof(struct chunk), 0, MM_CHN);
+            return res;
         }
-        return chunk_mmch_getchunk(arr[ind2], m);
+        else
+        {
+            return chunk_mmch_getchunk(arr[ind2], m);
+        }
     }
     else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1) + C_IND2 * pow(DATA_SIZE / sizeof(int), 2) * DATA_SIZE)
     {
