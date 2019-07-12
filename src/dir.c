@@ -12,8 +12,6 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     dir new_dir;
     dir_init(&new_dir, path, mode, m);
 
-    if (new_dir.content_inode == -1)
-        return -1;
     int res = memcached_add_struct(m, path, &new_dir, sizeof(struct dir), 0, MM_DIR);
 
     if (res == ERROR || res == NOT_STORED)

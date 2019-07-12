@@ -14,7 +14,6 @@ typedef struct dir
 {
     int _NOT_USED;
     char dir_name[MAX_FNAME];
-    int content_inode;
     mode_t mode;
     content cn;
 } dir;
