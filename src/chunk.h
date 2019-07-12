@@ -15,7 +15,7 @@ typedef struct chunk
 } chunk;
 
 /* Creates empty chunk */
-chunk chunk_create(char *key, memcached *m);
+void chunk_create(char *key, chunk *c, memcached *m);
 
 /* Initializes chunk */
 void chunk_init(chunk *, char *key, memcached *);
@@ -27,6 +27,6 @@ int chunk_write(chunk *, const void *, int, memcached *);
 int chunk_read(chunk *c, int, char *, int, memcached *);
 
 /* Return chunk with given inode */
-chunk chunk_mmch_getchunk(char *key, memcached *m);
+void chunk_mmch_getchunk(char *key, memcached *m, chunk *c);
 
 #endif // !DATA_H

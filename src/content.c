@@ -3,7 +3,7 @@
 #include "utils.h"
 #include <math.h>
 
-chunk _content_get_chunk(int n, content *cn, memcached *m);
+void _content_get_chunk(int index, content *cn, chunk *c, memcached *m);
 void _content_to_str(int n, content *cn, char *buf);
 
 void content_init(content *cn, const char *path, memcached *m)
@@ -27,11 +27,12 @@ int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
 
     // Read Data From Direct Blocks
     int b = 0;
-    chunk c = _content_get_chunk(off_t / DATA_SIZE, cn, m);
+    chunk c;
+    _content_get_chunk(off_t / DATA_SIZE, cn, &c, m);
     int read_bytes = chunk_read(&c, off_t % DATA_SIZE, buf, size, m);
     while (read_bytes < size && c.ind == DATA_SIZE)
     {
-        c = _content_get_chunk((off_t + read_bytes) / DATA_SIZE, cn, m);
+        _content_get_chunk((off_t + read_bytes) / DATA_SIZE, cn, &c, m);
         b = chunk_read(&c, 0, buf + read_bytes, size - read_bytes, m);
         read_bytes += b;
     }
@@ -43,7 +44,8 @@ int content_write(content *cn, int off_t, int size, const char *buf, memcached *
     if (size == 0)
         return 0;
 
-    chunk c = _content_get_chunk(off_t / DATA_SIZE, cn, m);
+    chunk c;
+    _content_get_chunk(off_t / DATA_SIZE, cn, &c, m);
     int written_bytes = chunk_write(&c, buf, size, m);
     cn->size += written_bytes;
     return written_bytes;
@@ -62,21 +64,22 @@ int content_append(content *cn, int size, char *buf, memcached *m)
 
 int content_read_full_chunk(content *cn, int ch_num, char *buf, memcached *m)
 {
-    chunk ch = _content_get_chunk(ch_num, cn, m);
+    chunk ch;
+    _content_get_chunk(ch_num, cn, &ch, m);
     memcpy(buf, ch.data, ch.ind);
     return ch.ind;
 }
 
-chunk _content_get_chunk(int index, content *cn, memcached *m)
+void _content_get_chunk(int index, content *cn, chunk *c, memcached *m)
 {
     char str[300];
     _content_to_str(index, cn, str);
     int total_ind = (cn->size / DATA_SIZE);
 
-    chunk c = chunk_mmch_getchunk(str, m);
-    if (c._NOT_USED)
-        return c;
-    return chunk_create(str, m);
+    chunk_mmch_getchunk(str, m, c);
+    if (c->_NOT_USED)
+        return;
+    chunk_create(str, c, m);
 }
 
 void content_free(content *cn, memcached *m)

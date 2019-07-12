@@ -53,7 +53,8 @@ dir dir_mmch_getdir(const char *path, memcached *m)
 {
     char key[strlen(path) + 1];
     memcpy(key, path, strlen(path) + 1);
-    mm_data_info info = memcached_get(m, key);
+    mm_data_info info;
+    memcached_get(m, key, &info);
 
     // copy given value into
     dir dir;

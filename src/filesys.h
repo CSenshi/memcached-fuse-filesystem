@@ -51,4 +51,7 @@ int FS_link(const char *, const char *);
 int FS_symlink(const char *, const char *);
 int FS_readlink(const char *, char *, size_t);
 
+// optional
+int FS_utimens(const char *, const struct timespec tv[2], struct fuse_file_info *);
+
 #endif // !FILESYS_H

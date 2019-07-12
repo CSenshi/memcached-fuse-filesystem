@@ -3,14 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-chunk chunk_create(char *key, memcached *m)
+void chunk_create(char *key, chunk *c, memcached *m)
 {
-    chunk c;
-    chunk_init(&c, key, m);
+    chunk_init(c, key, m);
 
-    int res = memcached_set_struct(m, key, &c, sizeof(struct chunk), 0, MM_CHN);
-
-    return c;
+    int res = memcached_set_struct(m, key, c, sizeof(struct chunk), 0, MM_CHN);
 }
 
 void chunk_init(chunk *chunk, char *key, memcached *m)
@@ -41,15 +38,14 @@ int chunk_read(chunk *c, int off_set, char *buf, int size, memcached *m)
     return read_bytes;
 }
 
-chunk chunk_mmch_getchunk(char *key, memcached *m)
+void chunk_mmch_getchunk(char *key, memcached *m, chunk *c)
 {
-    mm_data_info info = memcached_get(m, key);
+    mm_data_info info;
+    memcached_get(m, key, &info);
 
     // copy given value into
-    chunk c;
     if (info.value)
-        memcpy(&c, info.value, sizeof(struct chunk));
+        memcpy(c, info.value, sizeof(struct chunk));
     else
-        memset(&c, 0, sizeof(struct chunk));
-    return c;
+        memset(c, 0, sizeof(struct chunk));
 }

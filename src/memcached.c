@@ -21,12 +21,12 @@
 #define NOT_FOUND_STR "NOT_FOUND"
 
 char *_create_str_request3(char *command, const char *str1, char *str2);
-char *_create_struct_request(char *command, mm_data_info info);
+char *_create_struct_request(char *command, mm_data_info *info);
 char *_create_str_request(char *command, const char *str);
-mm_data_info _parse_resp(char *resp);
+void _parse_resp(char *resp, mm_data_info *);
 void _send_mm_req(int fd, char *req, int size);
 void _append_ending(char **str, int size);
-char *_recv_mm_resp(int fd);
+void _recv_mm_resp(int fd, char *buf);
 
 void memcached_init(struct memcached *m)
 {
@@ -37,6 +37,7 @@ void memcached_init(struct memcached *m)
     m->port = MMCH_PORT;
 
     m->fd = socket(AF_INET, SOCK_STREAM, 0);
+
     struct in_addr s_addr;
     inet_pton(AF_INET, m->addr, &s_addr.s_addr);
 
@@ -52,7 +53,7 @@ int memcached_add(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("add", info);
+    char *req = _create_struct_request("add", &info);
 
     char *val = malloc(info.size);
     memset(val, 0, info.size);
@@ -64,15 +65,15 @@ int memcached_add(struct memcached *m, struct mm_data_info info)
     _send_mm_req(m->fd, req, strlen(req));
     _send_mm_req(m->fd, val, info.size + 2);
 
-    char *res = _recv_mm_resp(m->fd);
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 
     int return_val = ERROR;
-    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+    if (!strncmp(buffer, STORED_STR, strlen(STORED_STR)))
         return_val = STORED;
-    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+    else if (!strncmp(buffer, NOT_STORED_STR, strlen(NOT_STORED_STR)))
         return_val = NOT_STORED;
 
-    free(res);
     return return_val;
 }
 
@@ -80,7 +81,7 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("set", info);
+    char *req = _create_struct_request("set", &info);
 
     char *val = malloc(info.size);
     memset(val, 0, info.size);
@@ -92,15 +93,15 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
     _send_mm_req(m->fd, req, strlen(req));
     _send_mm_req(m->fd, val, info.size + 2);
 
-    char *res = _recv_mm_resp(m->fd);
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 
     int return_val = ERROR;
-    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+    if (!strncmp(buffer, STORED_STR, strlen(STORED_STR)))
         return_val = STORED;
-    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+    else if (!strncmp(buffer, NOT_STORED_STR, strlen(NOT_STORED_STR)))
         return_val = NOT_STORED;
 
-    free(res);
     return return_val;
 }
 
@@ -108,7 +109,7 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("replace", info);
+    char *req = _create_struct_request("replace", &info);
 
     char *val = malloc(info.size);
     memset(val, 0, info.size);
@@ -120,17 +121,17 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
     _send_mm_req(m->fd, req, strlen(req));
     _send_mm_req(m->fd, val, info.size + 2);
 
-    char *res = _recv_mm_resp(m->fd);
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 
     int return_val = ERROR;
-    if (!strncmp(res, STORED_STR, strlen(STORED_STR)))
+    if (!strncmp(buffer, STORED_STR, strlen(STORED_STR)))
         return_val = STORED;
-    else if (!strncmp(res, NOT_STORED_STR, strlen(NOT_STORED_STR)))
+    else if (!strncmp(buffer, NOT_STORED_STR, strlen(NOT_STORED_STR)))
         return_val = NOT_STORED;
 
     free(req);
     free(val);
-    free(res);
     return return_val;
 }
 
@@ -142,9 +143,11 @@ int memcached_increment(struct memcached *m, const char *key, int n)
     _append_ending(&req, strlen(req));
 
     _send_mm_req(m->fd, req, strlen(req));
-    char *res = _recv_mm_resp(m->fd);
 
-    return str_to_int(res);
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
+
+    return str_to_int(buffer);
 }
 
 int memcached_delete(struct memcached *m, const char *key)
@@ -155,28 +158,31 @@ int memcached_delete(struct memcached *m, const char *key)
     _append_ending(&req, strlen(req));
 
     _send_mm_req(m->fd, req, strlen(req));
-    char *res = _recv_mm_resp(m->fd);
+
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 
     int result = ERROR;
-    if (!strncmp(res, DELETED_STR, strlen(DELETED_STR)))
+    if (!strncmp(buffer, DELETED_STR, strlen(DELETED_STR)))
         result = DELETED;
-    else if (!strncmp(res, NOT_FOUND_STR, strlen(NOT_FOUND_STR)))
+    else if (!strncmp(buffer, NOT_FOUND_STR, strlen(NOT_FOUND_STR)))
         result = NOT_FOUND;
 
     return result;
 }
 
-mm_data_info memcached_get(struct memcached *m, const char *key)
+void memcached_get(struct memcached *m, const char *key, mm_data_info *info)
 {
     _debug_print("\n");
 
     char *req = _create_str_request("get", key);
     _append_ending(&req, strlen(req));
     _send_mm_req(m->fd, req, strlen(req));
-    char *res = _recv_mm_resp(m->fd);
 
-    mm_data_info result = _parse_resp(res);
-    return result;
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
+
+    _parse_resp(buffer, info);
 }
 
 void memcached_flush(struct memcached *m)
@@ -188,7 +194,9 @@ void memcached_flush(struct memcached *m)
 
     _send_mm_req(m->fd, req, strlen(req));
     free(req);
-    char *resp = _recv_mm_resp(m->fd);
+
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 }
 
 int memcached_add_struct(struct memcached *m, const char *key, void *src, int size, int ttl, int flags)
@@ -247,7 +255,9 @@ void memcached_exit(struct memcached *m)
     char *req = strdup("quit");
     _append_ending(&req, strlen(req));
     _send_mm_req(m->fd, req, strlen(req));
-    char *resp = _recv_mm_resp(m->fd);
+
+    char buffer[MAX_READ_BYTES];
+    _recv_mm_resp(m->fd, buffer);
 
     close(m->fd);
 
@@ -262,17 +272,13 @@ void _send_mm_req(int fd, char *req, int size)
     _debug_print("Request Sent      : %s", req);
 }
 
-char *_recv_mm_resp(int fd)
+void _recv_mm_resp(int fd, char *buffer)
 {
-    int buff_size = MAX_READ_BYTES;
-    char *buffer = malloc(sizeof(char) * buff_size);
-    memset(buffer, 0, sizeof(char) * buff_size);
 
-    int read_bytes = read(fd, buffer, buff_size);
+    int read_bytes = read(fd, buffer, MAX_READ_BYTES);
     buffer[read_bytes] = '\0';
 
     _debug_print("Response Recieved : %s", buffer);
-    return buffer;
 }
 
 char *_create_str_request(char *command, const char *str)
@@ -303,25 +309,25 @@ char *_create_str_request3(char *command, const char *str1, char *str2)
     return req;
 }
 
-char *_create_struct_request(char *command, mm_data_info info)
+char *_create_struct_request(char *command, mm_data_info *info)
 {
-    char flags_str[50];
-    sprintf(flags_str, "%d", info.flags);
+    char flags_str[10];
+    sprintf(flags_str, "%d", info->flags);
 
-    char ttl_str[50];
-    sprintf(ttl_str, "%d", info.ttl);
+    char ttl_str[10];
+    sprintf(ttl_str, "%d", info->ttl);
 
-    char size_str[50];
-    sprintf(size_str, "%d", info.size);
+    char size_str[10];
+    sprintf(size_str, "%d", info->size);
 
-    int to_alloc = strlen(command) + strlen(info.key) + strlen(flags_str) + strlen(ttl_str) + strlen(size_str) + 7;
+    int to_alloc = strlen(command) + strlen(info->key) + strlen(flags_str) + strlen(ttl_str) + strlen(size_str) + 7;
     char *req = malloc(to_alloc);
     memset(req, 0, to_alloc);
 
     strcat(req, command);
     strcat(req, " ");
 
-    strcat(req, info.key);
+    strcat(req, info->key);
     strcat(req, " ");
 
     strcat(req, flags_str);
@@ -342,16 +348,15 @@ void _append_ending(char **str, int size)
     (*str)[size + 2] = '\0';
 }
 
-mm_data_info _parse_resp(char *resp)
+void _parse_resp(char *resp, mm_data_info *res)
 {
-    mm_data_info res = {NULL, 0, 0, 0, NULL};
+    memset(res, 0, sizeof(struct mm_data_info));
     char *type = strtok(resp, " ");
     if (strncmp(type, "END", strlen("END")))
     {
-        res.key = strtok(NULL, " ");
-        res.flags = atoi(strtok(NULL, " "));
-        res.size = atoi(strtok(NULL, "\n"));
-        res.value = strtok(NULL, "\n");
+        res->key = strtok(NULL, " ");
+        res->flags = atoi(strtok(NULL, " "));
+        res->size = atoi(strtok(NULL, "\n"));
+        res->value = strtok(NULL, "\n");
     }
-    return res;
 }

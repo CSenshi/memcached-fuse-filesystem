@@ -134,7 +134,8 @@ int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, s
     if (path[0] != '/')
         return -ENOENT;
 
-    mm_data_info info = memcached_get(m, path);
+    mm_data_info info;
+    memcached_get(m, path, &info);
 
     // file was not found
     if (info.value == NULL)
@@ -250,7 +251,8 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
-    mm_data_info info = memcached_get(m, path);
+    mm_data_info info;
+    memcached_get(m, path, &info);
 
     // file was not found
     if (info.value == NULL)
@@ -279,7 +281,8 @@ int FS_write(const char *path, const char *buf, size_t size, off_t off, struct f
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
-    mm_data_info info = memcached_get(m, path);
+    mm_data_info info;
+    memcached_get(m, path, &info);
 
     // file was not found
     if (info.value == NULL)
@@ -365,7 +368,8 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
-    mm_data_info info = memcached_get(m, path);
+    mm_data_info info;
+    memcached_get(m, path, &info);
 
     // file was not found
     if (info.value == NULL)
@@ -498,10 +502,20 @@ int FS_readlink(const char *path, char *buf, size_t size)
     return 0;
 }
 
+/* Change the access and modification times of a file with nanosecond resolution
+ * This supersedes the old utime() interface. New applications should use this.
+ * fi will always be NULL if the file is not currenlty open, but may also be NULL if the file is open.
+ * See the utimensat(2) man page for details. */
+int FS_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi)
+{
+    return 0;
+}
+
 /* Private Functions */
 int _FS_check(memcached *m)
 {
-    struct mm_data_info info = memcached_get(m, INDEX_KEY_STR);
+    struct mm_data_info info;
+    memcached_get(m, INDEX_KEY_STR, &info);
     if (!info.value)
         return 0;
 

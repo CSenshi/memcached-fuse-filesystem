@@ -54,7 +54,7 @@ int memcached_increment(struct memcached *m, const char *key, int n);
 int memcached_delete(struct memcached *m, const char *key);
 
 /* Reads a value */
-mm_data_info memcached_get(struct memcached *m, const char *key);
+void memcached_get(struct memcached *m, const char *key, mm_data_info *info);
 
 /* Invalidate all items immediately */
 void memcached_flush(struct memcached *m);
