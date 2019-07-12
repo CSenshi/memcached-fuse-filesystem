@@ -38,7 +38,7 @@ int main()
     memcached *m = malloc(sizeof(memcached));
     memcached_init(m);
     int total = 0;
-    for (int i = 7; i < NUM_TESTS; i++)
+    for (int i = 0; i < NUM_TESTS; i++)
     {
         memcached_flush(m);
 
@@ -48,6 +48,7 @@ int main()
         else
             printf("Failed : Test %d\n", i);
         total += res == 0 ? 1 : 0;
+        // break;
     }
     printf("Total Tests Passed : %d/%d", total, NUM_TESTS);
     memcached_exit(m);
@@ -91,6 +92,7 @@ int test_2(memcached *m)
         return -1;
 
     value_test = "test_value_changed";
+
     res = memcached_set(m, info);
     if (res != STORED)
         return -1;
@@ -111,7 +113,8 @@ int test_3(memcached *m)
     if (res != STORED)
         return -1;
 
-    mm_data_info info_res = memcached_get(m, key_test);
+    mm_data_info info_res;
+    memcached_get(m, key_test, &info_res);
     if (!strcmp(info_res.value, info.value))
         return -1;
 
@@ -135,7 +138,8 @@ int test_4(memcached *m)
     if (res != NOT_FOUND)
         return -1;
 
-    mm_data_info info_res = memcached_get(m, key_test);
+    mm_data_info info_res;
+    memcached_get(m, key_test, &info_res);
     if (info_res.value)
         return -1;
 
@@ -157,13 +161,15 @@ int test_5(memcached *m)
 
     res = memcached_increment(m, key_test, 1);
 
-    mm_data_info info_res = memcached_get(m, key_test);
+    mm_data_info info_res;
+    memcached_get(m, key_test, &info_res);
     if (res != 6)
         return -1;
 
     res = memcached_increment(m, key_test, 10);
 
-    info_res = memcached_get(m, key_test);
+    info_res;
+    memcached_get(m, key_test, &info_res);
     if (res != 16)
         return -1;
 
@@ -180,7 +186,8 @@ int test_6(memcached *m)
     if (res != STORED)
         return -1;
 
-    mm_data_info info_res = memcached_get(m, key_test);
+    mm_data_info info_res;
+    memcached_get(m, key_test, &info_res);
 
     for (int i = 0; i < 5; i++)
     {
@@ -206,7 +213,8 @@ int test_7(memcached *m)
     if (res != STORED)
         return -1;
 
-    mm_data_info info_res = memcached_get(m, key_test);
+    mm_data_info info_res;
+    memcached_get(m, key_test, &info_res);
     for (int i = 0; i < 6; i++)
         if (info_res.value[i] != value_test[i])
             return -1;
@@ -237,8 +245,9 @@ int test_8(memcached *m)
     str->arr[6] = '\0';
 
     // ADD
-    memcached_add_struct(m, key_test, str, sizeof(struct test_struct));
-    mm_data_info info = memcached_get(m, key_test);
+    memcached_add_struct(m, key_test, str, sizeof(struct test_struct), 0, 0);
+    mm_data_info info;
+    memcached_get(m, key_test, &info);
 
     test_struct *str2 = malloc(sizeof(test_struct));
     memcpy(str2, info.value, sizeof(test_struct));
@@ -247,8 +256,8 @@ int test_8(memcached *m)
         return -1;
 
     // REPLACE
-    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct));
-    info = memcached_get(m, key_test);
+    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct), 0, 0);
+    memcached_get(m, key_test, &info);
 
     memset(str2, 0, sizeof(test_struct));
     memcpy(str2, info.value, sizeof(test_struct));
@@ -268,8 +277,8 @@ int test_8(memcached *m)
     str->arr[5] = 'S';
     str->arr[6] = '\0';
 
-    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct));
-    info = memcached_get(m, key_test);
+    memcached_replace_struct(m, key_test, str, sizeof(struct test_struct), 0, 0);
+    memcached_get(m, key_test, &info);
 
     memset(str2, 0, sizeof(test_struct));
     memcpy(str2, info.value, sizeof(test_struct));
