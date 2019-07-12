@@ -1,8 +1,6 @@
 #ifndef FILE_H
 #define FILE_H
 
-#define MAX_FNAME 256
-
 #include "content.h"
 #include "memcached.h"
 #include <stdio.h>

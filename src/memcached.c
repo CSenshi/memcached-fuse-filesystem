@@ -53,17 +53,55 @@ int memcached_add(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("add", &info);
+    char *command = "add";
+    char *flag_str = int_to_str(info.flags);
+    char *ttl_str = int_to_str(info.ttl);
+    char *size_str = int_to_str(info.size);
 
-    char *val = malloc(info.size);
-    memset(val, 0, info.size);
-    memcpy(val, info.value, info.size);
+    int command_len = strlen(command);
+    int key_len = strlen(info.key);
+    int flag_len = strlen(flag_str);
+    int ttl_len = strlen(ttl_str);
+    int size_len = strlen(size_str);
 
-    _append_ending(&req, strlen(req));
-    _append_ending(&val, info.size);
+    int to_alloc = command_len + 1 +
+                   key_len + 1 +
+                   flag_len + 1 +
+                   ttl_len + 1 +
+                   size_len +
+                   2 + info.size + 2;
 
-    _send_mm_req(m->fd, req, strlen(req));
-    _send_mm_req(m->fd, val, info.size + 2);
+    char req2[to_alloc];
+    int n = 0;
+
+    memcpy(req2, command + n, command_len);
+    n += command_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, info.key, key_len);
+    n += key_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, flag_str, flag_len);
+    n += flag_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, ttl_str, ttl_len);
+    n += ttl_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, size_str, size_len);
+    n += size_len;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+
+    memcpy(req2 + n, info.value, info.size);
+    n += info.size;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+    _send_mm_req(m->fd, req2, n);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -81,17 +119,55 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("set", &info);
+    char *command = "set";
+    char *flag_str = int_to_str(info.flags);
+    char *ttl_str = int_to_str(info.ttl);
+    char *size_str = int_to_str(info.size);
 
-    char *val = malloc(info.size);
-    memset(val, 0, info.size);
-    memcpy(val, info.value, info.size);
+    int command_len = strlen(command);
+    int key_len = strlen(info.key);
+    int flag_len = strlen(flag_str);
+    int ttl_len = strlen(ttl_str);
+    int size_len = strlen(size_str);
 
-    _append_ending(&req, strlen(req));
-    _append_ending(&val, info.size);
+    int to_alloc = command_len + 1 +
+                   key_len + 1 +
+                   flag_len + 1 +
+                   ttl_len + 1 +
+                   size_len +
+                   2 + info.size + 2;
 
-    _send_mm_req(m->fd, req, strlen(req));
-    _send_mm_req(m->fd, val, info.size + 2);
+    char req2[to_alloc];
+    int n = 0;
+
+    memcpy(req2, command + n, command_len);
+    n += command_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, info.key, key_len);
+    n += key_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, flag_str, flag_len);
+    n += flag_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, ttl_str, ttl_len);
+    n += ttl_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, size_str, size_len);
+    n += size_len;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+
+    memcpy(req2 + n, info.value, info.size);
+    n += info.size;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+    _send_mm_req(m->fd, req2, n);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -109,17 +185,55 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("replace", &info);
+    char *command = "replace";
+    char *flag_str = int_to_str(info.flags);
+    char *ttl_str = int_to_str(info.ttl);
+    char *size_str = int_to_str(info.size);
 
-    char *val = malloc(info.size);
-    memset(val, 0, info.size);
-    memcpy(val, info.value, info.size);
+    int command_len = strlen(command);
+    int key_len = strlen(info.key);
+    int flag_len = strlen(flag_str);
+    int ttl_len = strlen(ttl_str);
+    int size_len = strlen(size_str);
 
-    _append_ending(&req, strlen(req));
-    _append_ending(&val, info.size);
+    int to_alloc = command_len + 1 +
+                   key_len + 1 +
+                   flag_len + 1 +
+                   ttl_len + 1 +
+                   size_len +
+                   2 + info.size + 2;
 
-    _send_mm_req(m->fd, req, strlen(req));
-    _send_mm_req(m->fd, val, info.size + 2);
+    char req2[to_alloc];
+    int n = 0;
+
+    memcpy(req2, command + n, command_len);
+    n += command_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, info.key, key_len);
+    n += key_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, flag_str, flag_len);
+    n += flag_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, ttl_str, ttl_len);
+    n += ttl_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, size_str, size_len);
+    n += size_len;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+
+    memcpy(req2 + n, info.value, info.size);
+    n += info.size;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+    _send_mm_req(m->fd, req2, n);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -130,8 +244,6 @@ int memcached_replace(struct memcached *m, struct mm_data_info info)
     else if (!strncmp(buffer, NOT_STORED_STR, strlen(NOT_STORED_STR)))
         return_val = NOT_STORED;
 
-    free(req);
-    free(val);
     return return_val;
 }
 
@@ -152,12 +264,25 @@ int memcached_increment(struct memcached *m, const char *key, int n)
 
 int memcached_delete(struct memcached *m, const char *key)
 {
-    _debug_print("\n");
+    char *command = "delete";
+    int command_len = 6;
+    int key_len = strlen(key);
+    int to_alloc = command_len + key_len + 3;
 
-    char *req = _create_str_request("delete", key);
-    _append_ending(&req, strlen(req));
+    char req2[to_alloc];
+    int n = 0;
 
-    _send_mm_req(m->fd, req, strlen(req));
+    memcpy(req2, command + n, command_len);
+    n += command_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, key, key_len);
+    n += key_len;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+
+    _send_mm_req(m->fd, req2, n);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -175,9 +300,25 @@ void memcached_get(struct memcached *m, const char *key, mm_data_info *info)
 {
     _debug_print("\n");
 
-    char *req = _create_str_request("get", key);
-    _append_ending(&req, strlen(req));
-    _send_mm_req(m->fd, req, strlen(req));
+    char *command = "get";
+    int command_len = 3;
+    int key_len = strlen(key);
+    int to_alloc = command_len + key_len + 3;
+
+    char req2[to_alloc];
+    int n = 0;
+
+    memcpy(req2, command + n, command_len);
+    n += command_len;
+    req2[n++] = ' ';
+
+    memcpy(req2 + n, key, key_len);
+    n += key_len;
+
+    req2[n++] = '\r';
+    req2[n++] = '\n';
+
+    _send_mm_req(m->fd, req2, n);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -350,7 +491,7 @@ void _append_ending(char **str, int size)
 
 void _parse_resp(char *resp, mm_data_info *res)
 {
-    memset(res, 0, sizeof(struct mm_data_info));
+    // memset(res, 0, sizeof(struct mm_data_info));
     char *type = strtok(resp, " ");
     if (strncmp(type, "END", strlen("END")))
     {
