@@ -2,25 +2,11 @@
 #include "chunk.h"
 #include "utils.h"
 #include <math.h>
+
 chunk _content_get_chunk(int n, content *cn, memcached *m);
+void _content_to_str(int n, content *cn, char *buf);
 
-int content_create(memcached *m)
-{
-    content *cn = malloc(sizeof(struct content));
-    content_init(cn, m);
-
-    if (!cn->DIRR_inode[0])
-        return -1;
-
-    int res = memcached_add_struct(m, int_to_str(cn->inode), cn, sizeof(struct content), 0, MM_CON);
-
-    if (res == ERROR || res == NOT_STORED)
-        return -1;
-
-    return cn->inode;
-}
-
-void content_init(content *cn, memcached *m)
+void content_init(content *cn, const char *path, memcached *m)
 {
     // fill with zeros
     memset(cn, 0, sizeof(struct content));
@@ -28,19 +14,10 @@ void content_init(content *cn, memcached *m)
     // fill with ones
     cn->_NOT_USED = -1;
 
-    // get next identificator
-    cn->inode = get_next_index(m);
-
     // set size to zero
     cn->size = 0;
 
-    // set initial adresses to 0
-    memset(cn->DIRR_inode, 0, sizeof(int) * C_IND1);
-    memset(cn->IND1_inode, 0, sizeof(int) * C_IND1);
-    memset(cn->IND2_inode, 0, sizeof(int) * C_IND2);
-
-    chunk c;
-    cn->DIRR_inode[0] = chunk_create(&c, m);
+    memcpy(cn->path, path, strlen(path) + 1);
 }
 
 int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
@@ -69,7 +46,6 @@ int content_write(content *cn, int off_t, int size, const char *buf, memcached *
     chunk c = _content_get_chunk(off_t / DATA_SIZE, cn, m);
     int written_bytes = chunk_write(&c, buf, size, m);
     cn->size += written_bytes;
-    memcached_replace_struct(m, int_to_str(cn->inode), cn, sizeof(struct content), 0, MM_CON);
     return written_bytes;
 }
 
@@ -91,64 +67,33 @@ int content_read_full_chunk(content *cn, int ch_num, char *buf, memcached *m)
     return ch.ind;
 }
 
-content content_mmch_getcontent(int inode, memcached *m)
+chunk _content_get_chunk(int index, content *cn, memcached *m)
 {
-    char *key = int_to_str(inode);
-    mm_data_info info = memcached_get(m, key);
+    char str[300];
+    _content_to_str(index, cn, str);
+    int total_ind = (cn->size / DATA_SIZE);
 
-    // copy given value into
-    content cn;
-    memcpy(&cn, info.value, sizeof(struct content));
-
-    return cn;
+    chunk c = chunk_mmch_getchunk(str, m);
+    if (c._NOT_USED)
+        return c;
+    return chunk_create(str, m);
 }
 
-chunk _content_get_chunk(int n, content *cn, memcached *m)
+void content_free(content *cn, memcached *m)
 {
-    struct chunk res;
-
-    if (n < C_DIRR)
+    int res = -1;
+    char str[300];
+    for (int i = 0; res != NOT_FOUND; i++)
     {
-        if (!cn->DIRR_inode[n])
-            cn->DIRR_inode[n] = chunk_create(&res, m);
-        else
-            res = chunk_mmch_getchunk(cn->DIRR_inode[n], m);
-        return res;
+        _content_to_str(i, cn, str);
+        res = memcached_delete(m, str);
     }
-    else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1))
-    {
-        n -= C_DIRR;
-
-        chunk c;
-        int ind = n / pow(DATA_SIZE / sizeof(int), 1);
-        if (!cn->IND1_inode[ind])
-            cn->IND1_inode[ind] = chunk_create(&c, m);
-        else
-            c = chunk_mmch_getchunk(cn->IND1_inode[ind], m);
-        int arr[DATA_SIZE / sizeof(int)];
-        memcpy(arr, c.data, DATA_SIZE);
-
-        int ind2 = n % (DATA_SIZE / sizeof(int));
-        if (!arr[ind2])
-        {
-            arr[ind2] = chunk_create(&res, m);
-            memcpy(c.data, arr, DATA_SIZE);
-            memcached_replace_struct(m, int_to_str(c.inode), &c, sizeof(struct chunk), 0, MM_CHN);
-            return res;
-        }
-        else
-        {
-            return chunk_mmch_getchunk(arr[ind2], m);
-        }
-    }
-    else if (n < C_DIRR + C_IND1 * pow(DATA_SIZE / sizeof(int), 1) + C_IND2 * pow(DATA_SIZE / sizeof(int), 2) * DATA_SIZE)
-    {
-        // ToDo Implement Double Indirect
-    }
-    return res;
-}
-
-void content_free(int inode, memcached *m)
-{
     return;
+}
+void _content_to_str(int n, content *cn, char *buf)
+{
+    char *s = int_to_str(n);
+    memcpy(buf, s, strlen(s));
+    memcpy(buf + strlen(s), cn->path, strlen(cn->path) + 1);
+    free(s);
 }

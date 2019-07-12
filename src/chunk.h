@@ -4,21 +4,21 @@
 #include "memcached.h"
 
 #define DATA_SIZE 4096
+#define MAX_FNAME 256
 
 typedef struct chunk
 {
     int _NOT_USED;
-
     char data[DATA_SIZE];
+    char key[MAX_FNAME];
     int ind;
-    int inode;
 } chunk;
 
 /* Creates empty chunk */
-int chunk_create(chunk *, memcached *);
+chunk chunk_create(char *key, memcached *m);
 
 /* Initializes chunk */
-void chunk_init(chunk *, memcached *);
+void chunk_init(chunk *, char *key, memcached *);
 
 /* Writes data into chunk */
 int chunk_write(chunk *, const void *, int, memcached *);
@@ -27,6 +27,6 @@ int chunk_write(chunk *, const void *, int, memcached *);
 int chunk_read(chunk *c, int, char *, int, memcached *);
 
 /* Return chunk with given inode */
-chunk chunk_mmch_getchunk(int inode, memcached *m);
+chunk chunk_mmch_getchunk(char *key, memcached *m);
 
 #endif // !DATA_H

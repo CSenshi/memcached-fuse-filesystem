@@ -3,25 +3,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-int chunk_create(chunk *c, memcached *m)
+chunk chunk_create(char *key, memcached *m)
 {
-    chunk_init(c, m);
+    chunk c;
+    chunk_init(&c, key, m);
 
-    int res = memcached_add_struct(m, int_to_str(c->inode), c, sizeof(struct chunk), 0, MM_CHN);
+    int res = memcached_set_struct(m, key, &c, sizeof(struct chunk), 0, MM_CHN);
 
-    if (res == ERROR || res == NOT_STORED)
-        return -1;
-
-    return c->inode;
+    return c;
 }
 
-void chunk_init(chunk *chunk, memcached *m)
+void chunk_init(chunk *chunk, char *key, memcached *m)
 {
     // fill with zeros
     memset(chunk, 0, sizeof(struct chunk));
 
     chunk->_NOT_USED = -1;
-    chunk->inode = get_next_index(m);
+    memcpy(chunk->key, key, strlen(key) + 1);
     chunk->ind = 0;
 }
 
@@ -32,8 +30,7 @@ int chunk_write(chunk *c, const void *data, int size, memcached *m)
 
     memcpy(c->data + c->ind, data, writeen_bytes);
     c->ind += writeen_bytes;
-    int res = memcached_replace_struct(m, int_to_str(c->inode),
-                                       c, sizeof(struct chunk), 0, MM_CHN);
+    int res = memcached_replace_struct(m, c->key, c, sizeof(struct chunk), 0, MM_CHN);
     return writeen_bytes;
 }
 
@@ -44,14 +41,15 @@ int chunk_read(chunk *c, int off_set, char *buf, int size, memcached *m)
     return read_bytes;
 }
 
-chunk chunk_mmch_getchunk(int inode, memcached *m)
+chunk chunk_mmch_getchunk(char *key, memcached *m)
 {
-    char *key = int_to_str(inode);
     mm_data_info info = memcached_get(m, key);
 
     // copy given value into
     chunk c;
-    memcpy(&c, info.value, sizeof(struct chunk));
-
+    if (info.value)
+        memcpy(&c, info.value, sizeof(struct chunk));
+    else
+        memset(&c, 0, sizeof(struct chunk));
     return c;
 }

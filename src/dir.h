@@ -1,9 +1,7 @@
 #ifndef DIR_H
 #define DIR_H
 
-#define CHILD_C 100
-#define MAX_FNAME 256
-
+#include "content.h"
 #include "memcached.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,19 +10,18 @@
 #include <time.h>
 #include <unistd.h>
 
-#define INIT_INODE 2322
-#define ROOT_DIR_INODE (INIT_INODE + 1)
-
 typedef struct dir
 {
     int _NOT_USED;
     char dir_name[MAX_FNAME];
     int content_inode;
     mode_t mode;
+    content cn;
 } dir;
 
 typedef struct dir_childs
 {
+    int _alloc;
     int n;
     char **arr;
 } dir_childs;
@@ -33,7 +30,7 @@ int dir_create(const char *, mode_t, memcached *);
 
 void dir_init(dir *, const char *, mode_t, memcached *);
 
-void dir_append(char *, char *, memcached *);
+void dir_append(dir *par_dir, char *elem, memcached *m);
 
 int dir_rmdir(const char *path, memcached *m);
 

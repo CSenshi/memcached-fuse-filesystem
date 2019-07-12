@@ -80,7 +80,7 @@ int memcached_set(struct memcached *m, struct mm_data_info info)
 {
     _debug_print("\n");
 
-    char *req = _create_struct_request("replace", info);
+    char *req = _create_struct_request("set", info);
 
     char *val = malloc(info.size);
     memset(val, 0, info.size);
@@ -264,7 +264,7 @@ void _send_mm_req(int fd, char *req, int size)
 
 char *_recv_mm_resp(int fd)
 {
-    int buff_size = 4096;
+    int buff_size = 5300;
     char *buffer = malloc(sizeof(char) * buff_size);
     memset(buffer, 0, sizeof(char) * buff_size);
 
