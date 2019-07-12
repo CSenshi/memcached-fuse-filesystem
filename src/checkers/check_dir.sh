@@ -152,19 +152,29 @@ test5(){
     echo
 }
 
-TOTAL_DIR_NUM=10
+run_test(){
+    TOTAL_DIR_NUM=10
+    
+    # Base Test Make 10 Directories
+    test1 $TOTAL_DIR_NUM
+    
+    # Create 10 Subdirectories
+    test2 $TOTAL_DIR_NUM
+    
+    # pwd and ls
+    test3 $TOTAL_DIR_NUM
+    
+    # Checking rmdir
+    # test5
+    
+    # Create Folders with large name
+    # test4
+}
 
-Base Test Make 10 Directories
-test1 $TOTAL_DIR_NUM
 
-# Create 10 Subdirectories
-test2 $TOTAL_DIR_NUM
+START=$(date +%s.%N)
+run_test
+END=$(date +%s.%N)
+DIFF=$(echo "$END - $START" | bc)
 
-# pwd and ls
-test3 $TOTAL_DIR_NUM
-
-# Checking rmdir
-test5
-
-# Create Folders with large name
-test4
+echo "Elapsed time : $DIFF seconds"
