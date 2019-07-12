@@ -264,7 +264,7 @@ void _send_mm_req(int fd, char *req, int size)
 
 char *_recv_mm_resp(int fd)
 {
-    int buff_size = 5300;
+    int buff_size = MAX_READ_BYTES;
     char *buffer = malloc(sizeof(char) * buff_size);
     memset(buffer, 0, sizeof(char) * buff_size);
 

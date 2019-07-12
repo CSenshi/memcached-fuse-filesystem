@@ -3,8 +3,8 @@ COMPILE_FLAGS=-c
 EXEC_FILE_FS=cachefs
 LIB=`pkg-config fuse3 --cflags --libs`
 
-all: cachefs.o memcached.o filesys.o dir.o utils.o chunk.o content.o 
-	$(CC) cachefs.o memcached.o filesys.o dir.o utils.o chunk.o content.o debug.h -o  $(EXEC_FILE_FS) $(LIB)
+all: cachefs.o memcached.o filesys.o dir.o file.o utils.o chunk.o content.o 
+	$(CC) cachefs.o memcached.o filesys.o dir.o file.o utils.o chunk.o content.o debug.h -o  $(EXEC_FILE_FS) $(LIB)
 
 cachefs.o: cachefs.c
 	$(CC) $(COMPILE_FLAGS) cachefs.c $(LIB)

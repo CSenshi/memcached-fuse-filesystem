@@ -196,7 +196,11 @@ int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     _debug_print_FS("\n%d FS : Called create\n", FS_COUNT++);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    int res = file_create(path, mode, m);
+    return res;
 }
 
 /* Open a file
@@ -243,7 +247,23 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
 {
     _debug_print_FS("\n%d FS : Called read\n", FS_COUNT++);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info = memcached_get(m, path);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    if (info.flags & MM_FIL)
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        return file_read(&f, buf, size, off, m);
+    }
+
+    return -1;
 }
 
 /* Write data to an open file
@@ -256,7 +276,23 @@ int FS_write(const char *path, const char *buf, size_t size, off_t off, struct f
 {
     _debug_print_FS("\n%d FS : Called write\n", FS_COUNT++);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info = memcached_get(m, path);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    if (info.flags & MM_FIL)
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        return file_write(&f, buf, size, off, m);
+    }
+
+    return -1;
 }
 
 /* Release an open file
@@ -335,7 +371,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     if (info.value == NULL)
         return -ENOENT;
 
-    // memset(buf, 0, sizeof(struct stat));
+    memset(buf, 0, sizeof(struct stat));
     buf->st_uid = context->uid; // The owner of the file/directory is the user who mounted the filesystem
     buf->st_gid = context->gid; // The group of the file/directory is the same as the group of the user who mounted the filesystem
     buf->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
@@ -352,9 +388,11 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     }
     else if (info.flags & MM_FIL) // check if file
     {
-        buf->st_mode = S_IFREG | 0644;
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        buf->st_mode = S_IFREG | 0755;
         buf->st_nlink = 1;
-        buf->st_size = 1024;
+        buf->st_size = file_get_size(&f, m);
     }
     else //error
         err = -1;
@@ -474,10 +512,10 @@ void _FS_new(memcached *m)
 {
     memcached_flush(m);
 
-    // Insert inode counter
-    char *index_key = int_to_str(INIT_INODE);
-    struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
-    memcached_add(m, index_info);
+    // // Insert inode counter
+    // char *index_key = int_to_str(INIT_INODE);
+    // struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
+    // memcached_add(m, index_info);
 
     // Add Root Directory
     mode_t root_mode = 0;
