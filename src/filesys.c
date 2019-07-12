@@ -145,7 +145,8 @@ int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, s
     {
         dir d;
         memcpy(&d, info.value, info.size);
-        dir_childs dc = dir_get_childs(&d, m);
+        dir_childs dc;
+        dir_get_childs(&d, m, &dc);
 
         filler(buf, "..", NULL, 0, 0);
         filler(buf, ".", NULL, 0, 0);

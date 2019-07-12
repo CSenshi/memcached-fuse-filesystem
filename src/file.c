@@ -14,7 +14,8 @@ int file_create(const char *path, mode_t mode, memcached *m)
         return -1;
 
     char *par_path = get_par_path(path);
-    dir d = dir_mmch_getdir(par_path, m);
+    dir d;
+    dir_mmch_getdir(par_path, m, &d);
     dir_append(&d, f.file_name, m);
     return 0;
 }

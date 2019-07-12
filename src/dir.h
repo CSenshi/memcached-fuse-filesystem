@@ -33,8 +33,8 @@ void dir_append(dir *par_dir, char *elem, memcached *m);
 
 int dir_rmdir(const char *path, memcached *m);
 
-dir dir_mmch_getdir(const char *, memcached *);
+void dir_mmch_getdir(const char *, memcached *, dir *);
 
-dir_childs dir_get_childs(dir *d, memcached *m);
+void dir_get_childs(dir *d, memcached *m, dir_childs *dc);
 
 #endif // !DIR_H
