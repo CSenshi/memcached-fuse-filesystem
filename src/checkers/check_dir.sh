@@ -10,7 +10,6 @@ if [ "$#" -ne 1 ]; then
 fi
 
 MOUNT_DIR=$1
-ERR=5
 cd $MOUNT_DIR
 
 CMD="   Command : "
@@ -165,10 +164,10 @@ run_test(){
     test3 $TOTAL_DIR_NUM
     
     # Checking rmdir
-    # test5
+    test5
     
     # Create Folders with large name
-    # test4
+    test4
 }
 
 
