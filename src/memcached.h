@@ -10,7 +10,7 @@
 #define MM_CHN 1 << 3
 #define MM_CON 1 << 4
 
-#define MAX_READ_BYTES 8500
+#define MAX_READ_BYTES 4500
 
 typedef struct memcached
 {
