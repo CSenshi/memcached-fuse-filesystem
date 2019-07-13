@@ -48,7 +48,8 @@ int content_write(content *cn, int off_t, int size, const char *buf, memcached *
     chunk c;
     _content_get_chunk(off_t / DATA_SIZE, cn, &c, m);
     int written_bytes = chunk_write(&c, buf, off_t % DATA_SIZE, size, m);
-    cn->size += written_bytes;
+
+    cn->size = max(off_t + written_bytes, cn->size);
     return written_bytes;
 }
 
