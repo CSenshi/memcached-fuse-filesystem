@@ -3,7 +3,7 @@
 
 #include "memcached.h"
 
-#define DATA_SIZE 1024
+#define DATA_SIZE 4096
 #define MAX_FNAME 250
 
 typedef struct chunk
@@ -21,7 +21,7 @@ void chunk_create(char *key, chunk *c, memcached *m);
 void chunk_init(chunk *, char *key, memcached *);
 
 /* Writes data into chunk */
-int chunk_write(chunk *, const void *, int, memcached *);
+int chunk_write(chunk *, const void *, int, int, memcached *);
 
 /* Reads data from chunk to buf */
 int chunk_read(chunk *c, int, char *, int, memcached *);

@@ -26,10 +26,11 @@ int content_read(content *cn, int off_t, int size, char *buf, memcached *m)
         return 0;
 
     // Read Data From Direct Blocks
-    int b = 0;
     chunk c;
     _content_get_chunk(off_t / DATA_SIZE, cn, &c, m);
+
     int read_bytes = chunk_read(&c, off_t % DATA_SIZE, buf, size, m);
+    int b = read_bytes;
     while (read_bytes < size && c.ind == DATA_SIZE)
     {
         _content_get_chunk((off_t + read_bytes) / DATA_SIZE, cn, &c, m);
@@ -46,7 +47,7 @@ int content_write(content *cn, int off_t, int size, const char *buf, memcached *
 
     chunk c;
     _content_get_chunk(off_t / DATA_SIZE, cn, &c, m);
-    int written_bytes = chunk_write(&c, buf, size, m);
+    int written_bytes = chunk_write(&c, buf, off_t % DATA_SIZE, size, m);
     cn->size += written_bytes;
     return written_bytes;
 }
@@ -98,5 +99,5 @@ void _content_to_str(int n, content *cn, char *buf)
     char *s = int_to_str(n);
     memcpy(buf, s, strlen(s));
     memcpy(buf + strlen(s), cn->path, strlen(cn->path) + 1);
-    free(s);
+    // free(s);
 }

@@ -334,7 +334,7 @@ void memcached_flush(struct memcached *m)
     _append_ending(&req, strlen(req));
 
     _send_mm_req(m->fd, req, strlen(req));
-    free(req);
+    // free(req);
 
     char buffer[MAX_READ_BYTES];
     _recv_mm_resp(m->fd, buffer);
@@ -491,7 +491,7 @@ void _append_ending(char **str, int size)
 
 void _parse_resp(char *resp, mm_data_info *res)
 {
-    // memset(res, 0, sizeof(struct mm_data_info));
+    memset(res, 0, sizeof(struct mm_data_info));
     char *type = strtok(resp, " ");
     if (strncmp(type, "END", strlen("END")))
     {

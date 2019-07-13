@@ -1,5 +1,6 @@
 #include "chunk.h"
 #include "utils.h"
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,12 +22,13 @@ void chunk_init(chunk *chunk, char *key, memcached *m)
 }
 
 /* Writes data into chunk */
-int chunk_write(chunk *c, const void *data, int size, memcached *m)
+int chunk_write(chunk *c, const void *data, int off_t, int size, memcached *m)
 {
-    int writeen_bytes = c->ind + size > DATA_SIZE ? DATA_SIZE - c->ind : size;
+    int writeen_bytes = off_t + size > DATA_SIZE ? DATA_SIZE - off_t : size;
 
-    memcpy(c->data + c->ind, data, writeen_bytes);
-    c->ind += writeen_bytes;
+    memcpy(c->data + off_t, data, writeen_bytes);
+    // c->ind += writeen_bytes;
+    c->ind = max(c->ind, off_t + writeen_bytes);
     int res = memcached_replace_struct(m, c->key, c, sizeof(struct chunk), 0, MM_CHN);
     return writeen_bytes;
 }

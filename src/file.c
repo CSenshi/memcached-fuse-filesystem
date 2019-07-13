@@ -16,6 +16,8 @@ int file_create(const char *path, mode_t mode, memcached *m)
     char *par_path = get_par_path(path);
     dir d;
     dir_mmch_getdir(par_path, m, &d);
+
+    // path = get_cur_path(path);
     dir_append(&d, f.file_name, m);
     return 0;
 }
@@ -28,7 +30,8 @@ void file_init(file *f, const char *path, mode_t mode, memcached *m)
     f->_NOT_USED = -1;
 
     //parse
-    memcpy(f->file_name, path, strlen(path));
+    parse_val prs = parse_path(path);
+    memcpy(f->file_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
 
     content_init(&f->cn, f->file_name, m);
 

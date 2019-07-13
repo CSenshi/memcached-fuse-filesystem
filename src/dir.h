@@ -29,7 +29,7 @@ int dir_create(const char *, mode_t, memcached *);
 
 void dir_init(dir *, const char *, mode_t, memcached *);
 
-void dir_append(dir *par_dir, char *elem, memcached *m);
+void dir_append(dir *par_dir, const char *elem, memcached *m);
 
 int dir_rmdir(const char *path, memcached *m);
 

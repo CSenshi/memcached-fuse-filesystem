@@ -5,6 +5,11 @@
 #include "string.h"
 #include "utils.h"
 
+#define max(a, b) \
+    ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
 typedef struct parse_val
 {
     int n;

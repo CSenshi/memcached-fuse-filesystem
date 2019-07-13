@@ -5,7 +5,7 @@
 
 #define OFF_LEN 4
 
-void _create_dir_entry_str(char *, char *);
+void _create_dir_entry_str(const char *, char *);
 
 int dir_create(const char *path, mode_t mode, memcached *m)
 {
@@ -41,7 +41,7 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     d->mode = mode;
 }
 
-void dir_append(dir *par_dir, char *elem, memcached *m)
+void dir_append(dir *par_dir, const char *elem, memcached *m)
 {
     char str[300];
     _create_dir_entry_str(elem, str);
@@ -154,11 +154,9 @@ void dir_get_childs(dir *d, memcached *m, dir_childs *dc)
     }
 }
 
-void _create_dir_entry_str(char *elem, char *buf)
+void _create_dir_entry_str(const char *elem, char *buf)
 {
-    // value 1 : inode
-    char *val1 = elem;
-    int len1 = strlen(val1);
+    int len1 = strlen(elem);
 
     int to_alloc = len1 + OFF_LEN + 1;
     memset(buf, '0', to_alloc);
@@ -166,7 +164,7 @@ void _create_dir_entry_str(char *elem, char *buf)
     // fill inode parameter
     char *len1_str = int_to_str(len1);
     memcpy(buf + OFF_LEN - strlen(len1_str), len1_str, strlen(len1_str));
-    memcpy(buf + OFF_LEN, val1, len1);
+    memcpy(buf + OFF_LEN, elem, len1);
 
     buf[to_alloc - 1] = '\0';
 }

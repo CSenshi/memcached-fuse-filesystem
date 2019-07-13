@@ -148,8 +148,8 @@ int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, s
         dir_childs dc;
         dir_get_childs(&d, m, &dc);
 
-        filler(buf, "..", NULL, 0, 0);
         filler(buf, ".", NULL, 0, 0);
+        filler(buf, "..", NULL, 0, 0);
 
         for (int i = 0; i < dc.n; i++)
         {
@@ -263,7 +263,8 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
-        return file_read(&f, buf, size, off, m);
+        int read_bytes = file_read(&f, buf, size, off, m);
+        return read_bytes;
     }
 
     return -1;
@@ -377,10 +378,9 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
         return -ENOENT;
 
     memset(buf, 0, sizeof(struct stat));
-    buf->st_uid = context->uid; // The owner of the file/directory is the user who mounted the filesystem
-    buf->st_gid = context->gid; // The group of the file/directory is the same as the group of the user who mounted the filesystem
-    buf->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
-    buf->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
+
+    buf->st_uid = getuid(); // The owner of the file/directory is the user who mounted the filesystem
+    buf->st_gid = getgid(); // The group of the file/directory is the same as the group of the user who mounted the filesystem
 
     int err = 0;
     if (info.flags & MM_DIR) // check if directory
@@ -395,14 +395,14 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
-        buf->st_mode = S_IFREG | 0755;
+        buf->st_mode = S_IFREG | 0444;
         buf->st_nlink = 1;
         buf->st_size = file_get_size(&f, m);
     }
     else //error
         err = -1;
 
-    return err;
+    return 0;
 }
 
 /* Check file access permissions
