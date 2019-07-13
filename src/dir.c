@@ -167,4 +167,5 @@ void _create_dir_entry_str(const char *elem, char *buf)
     memcpy(buf + OFF_LEN, elem, len1);
 
     buf[to_alloc - 1] = '\0';
+    free(len1_str);
 }

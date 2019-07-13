@@ -100,5 +100,5 @@ void _content_to_str(int n, content *cn, char *buf)
     char *s = int_to_str(n);
     memcpy(buf, s, strlen(s));
     memcpy(buf + strlen(s), cn->path, strlen(cn->path) + 1);
-    // free(s);
+    free(s);
 }
