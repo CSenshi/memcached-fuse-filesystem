@@ -9,9 +9,9 @@
 typedef struct chunk
 {
     int _NOT_USED;
+    int ind;
     char data[DATA_SIZE];
     char key[MAX_FNAME];
-    int ind;
 } chunk;
 
 /* Creates empty chunk */
