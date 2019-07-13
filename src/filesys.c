@@ -423,12 +423,63 @@ int FS_setxattr(const char *path, const char *name, const char *value, size_t si
 {
     _debug_print_FS("\n%d FS : Called setxattr\n", FS_COUNT++);
 
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int err = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+
+        file_setxattr(&f, name, value, size, m);
+    }
+    else //error
+        return -1;
+
     return 0;
 }
 /* Get extended attributes */
 int FS_getxattr(const char *path, const char *name, char *value, size_t size)
 {
     _debug_print_FS("\n%d FS : Called getxattr\n", FS_COUNT++);
+
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int err = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        return file_getxattr(&f, name, value, size, m);
+    }
+    else //error
+        return -1;
 
     return 0;
 }

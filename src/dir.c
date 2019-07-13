@@ -3,8 +3,6 @@
 #include "content.h"
 #include "utils.h"
 
-#define OFF_LEN 4
-
 void _create_dir_entry_str(const char *, char *);
 
 int dir_create(const char *path, mode_t mode, memcached *m)
@@ -120,10 +118,8 @@ void dir_get_childs(dir *d, memcached *m, dir_childs *dc)
     int ind = 0;
 
     int chunk_ind = 1;
-    int tt = 0;
     while (ind < read_data)
     {
-        tt++;
         // get length 1
         char cp_len1[OFF_LEN + 1];
         memcpy(cp_len1, s + ind, OFF_LEN);

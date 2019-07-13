@@ -5,6 +5,8 @@
 #include "string.h"
 #include "utils.h"
 
+#define OFF_LEN 3
+
 #define max(a, b) \
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \

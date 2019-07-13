@@ -5,6 +5,7 @@
 
 void _content_get_chunk(int index, content *cn, chunk *c, memcached *m);
 void _content_to_str(int n, content *cn, char *buf);
+void _create_ex_str(const char *val1, int len1, const char *val2, int len2, char *buf);
 
 void content_init(content *cn, const char *path, memcached *m)
 {
@@ -95,10 +96,92 @@ void content_free(content *cn, memcached *m)
     }
     return;
 }
+
+int content_setxattr(content *cn, const char *name, const char *value, int size, memcached *m)
+{
+    int to_alloc = 2 * OFF_LEN + strlen(name) + size;
+    char str[to_alloc];
+
+    _create_ex_str(name, strlen(name), value, size, str);
+    content_append(cn, to_alloc, str, m);
+    return 0;
+}
+
+int content_getxattr(content *cn, const char *name, char *buf, size_t size, memcached *m)
+{
+    char s[2 * DATA_SIZE] = {0};
+    int read_data = content_read_full_chunk(cn, 0, s, m);
+    if (cn->size > DATA_SIZE)
+        read_data += content_read_full_chunk(cn, 1, s + DATA_SIZE, m);
+    int ind = 0;
+
+    int chunk_ind = 1;
+    while (ind < read_data)
+    {
+        // get length 1
+        char cp_len1[OFF_LEN + 1];
+        memcpy(cp_len1, s + ind, OFF_LEN);
+        cp_len1[OFF_LEN] = '\0';
+        int len1 = str_to_int(cp_len1);
+        ind += OFF_LEN;
+
+        // get value 1;
+        char val1[len1 + 1];
+        memcpy(val1, s + ind, len1);
+        val1[len1] = '\0';
+        ind += len1;
+
+        // get length 2
+        char cp_len2[OFF_LEN + 1];
+        memcpy(cp_len2, s + ind, OFF_LEN);
+        cp_len2[OFF_LEN] = '\0';
+        int len2 = str_to_int(cp_len2);
+        ind += OFF_LEN;
+
+        // get value 2;
+        char val2[len2 + 1];
+        memcpy(val2, s + ind, len2);
+        val2[len2] = '\0';
+        ind += len2;
+
+        if (!strcmp(val1, name))
+        {
+            if (buf)
+                memcpy(buf, val2, size);
+
+            return len2;
+        }
+        if (DATA_SIZE < ind)
+        {
+            chunk_ind++;
+            memmove(s, s + DATA_SIZE, DATA_SIZE);
+            ind -= DATA_SIZE;
+            read_data -= DATA_SIZE;
+            read_data += content_read_full_chunk(cn, chunk_ind, s + DATA_SIZE, m);
+        }
+    }
+    return -2;
+}
+
 void _content_to_str(int n, content *cn, char *buf)
 {
     char *s = int_to_str(n);
     memcpy(buf, s, strlen(s));
     memcpy(buf + strlen(s), cn->path, strlen(cn->path) + 1);
     free(s);
+}
+
+void _create_ex_str(const char *val1, int len1, const char *val2, int len2, char *buf)
+{
+    // val1
+    char *len1_str = int_to_str(len1);
+    memset(buf, '0', OFF_LEN);
+    memcpy(buf + OFF_LEN - strlen(len1_str), len1_str, strlen(len1_str));
+    memcpy(buf + OFF_LEN, val1, len1);
+
+    // val2
+    char *len2_str = int_to_str(len2);
+    memset(buf + OFF_LEN + len1, '0', OFF_LEN);
+    memcpy(buf + OFF_LEN + len1 + OFF_LEN - strlen(len2_str), len2_str, strlen(len2_str));
+    memcpy(buf + OFF_LEN + len1 + OFF_LEN, val2, len2);
 }

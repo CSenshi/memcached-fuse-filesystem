@@ -14,6 +14,7 @@ typedef struct file
 {
     int _NOT_USED;
     char file_name[MAX_FNAME];
+    content ex_cn;
     content cn;
     mode_t mode;
 } file;
@@ -27,5 +28,9 @@ int file_write(file *, const char *, size_t, off_t, memcached *);
 int file_read(file *, char *, size_t, off_t, memcached *);
 
 int file_get_size(file *, memcached *m);
+
+int file_setxattr(file *, const char *name, const char *value, size_t size, memcached *m);
+
+int file_getxattr(file *, const char *name, char *buf, size_t size, memcached *m);
 
 #endif // FILE_H

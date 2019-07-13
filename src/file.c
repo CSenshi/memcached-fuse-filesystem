@@ -3,12 +3,14 @@
 #include "dir.h"
 #include "utils.h"
 
+void _create_ex_name(char *ex_path, const char *path);
+
 int file_create(const char *path, mode_t mode, memcached *m)
 {
     file f;
     file_init(&f, path, mode, m);
 
-    int res = memcached_add_struct(m, path, &f, sizeof(struct dir), 0, MM_FIL);
+    int res = memcached_add_struct(m, path, &f, sizeof(struct file), 0, MM_FIL);
 
     if (res == ERROR || res == NOT_STORED)
         return -1;
@@ -33,6 +35,12 @@ void file_init(file *f, const char *path, mode_t mode, memcached *m)
     memcpy(f->file_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
 
     content_init(&f->cn, path, m);
+
+    char ex_path[MAX_FNAME];
+
+    _create_ex_name(ex_path, path);
+    content_init(&f->ex_cn, ex_path, m);
+
     f->mode = mode;
 }
 
@@ -53,4 +61,25 @@ int file_read(file *f, char *buff, size_t size, off_t off, memcached *m)
 int file_get_size(file *f, memcached *m)
 {
     return f->cn.size;
+}
+
+int file_setxattr(file *f, const char *name, const char *value, size_t size, memcached *m)
+{
+    int exists = content_getxattr(&f->ex_cn, name, NULL, size, m);
+    if (exists != -2)
+        return 1;
+    int res = content_setxattr(&f->ex_cn, name, value, size, m);
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    return res;
+}
+
+int file_getxattr(file *f, const char *name, char *buf, size_t size, memcached *m)
+{
+    return content_getxattr(&f->ex_cn, name, buf, size, m);
+}
+
+void _create_ex_name(char *ex_path, const char *path)
+{
+    ex_path[0] = 'X';
+    memcpy(ex_path + 1, path, strlen(path) + 1);
 }
