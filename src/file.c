@@ -13,11 +13,10 @@ int file_create(const char *path, mode_t mode, memcached *m)
     if (res == ERROR || res == NOT_STORED)
         return -1;
 
+    // path = get_cur_path(path);
     char *par_path = get_par_path(path);
     dir d;
     dir_mmch_getdir(par_path, m, &d);
-
-    // path = get_cur_path(path);
     dir_append(&d, f.file_name, m);
     return 0;
 }
@@ -33,15 +32,14 @@ void file_init(file *f, const char *path, mode_t mode, memcached *m)
     parse_val prs = parse_path(path);
     memcpy(f->file_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
 
-    content_init(&f->cn, f->file_name, m);
-
+    content_init(&f->cn, path, m);
     f->mode = mode;
 }
 
 int file_write(file *f, const char *buff, size_t size, off_t off, memcached *m)
 {
     int bytes = content_write(&f->cn, off, size, buff, m);
-    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
     return bytes;
 }
 
