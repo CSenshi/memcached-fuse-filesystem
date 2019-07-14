@@ -37,8 +37,7 @@ void file_init(file *f, const char *path, mode_t mode, memcached *m)
     content_init(&f->cn, path, m);
 
     char ex_path[MAX_FNAME];
-
-    _create_ex_name(ex_path, path);
+    create_ex_name(ex_path, path);
     content_init(&f->ex_cn, ex_path, m);
 
     f->mode = mode;
@@ -71,6 +70,9 @@ int file_setxattr(file *f, const char *name, const char *value, size_t size, mem
         file_remxattr(f, name, m);
 
     res = content_setxattr(&f->ex_cn, name, value, size, m);
+
+    char ex_path[MAX_FNAME];
+    create_ex_name(ex_path, ex_path);
     memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
     return res;
 }
@@ -89,7 +91,7 @@ int file_remxattr(file *f, const char *name, memcached *m)
 
     content_free(&f->ex_cn, m);
     memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
-    content_init(&f->ex_cn, f->ex_cn.path, m);
+    content_init(&f->ex_cn, strdup(f->ex_cn.path), m);
     for (int i = 0; i < pv.n; i++)
     {
         if (res == i)
@@ -105,10 +107,4 @@ int file_remxattr(file *f, const char *name, memcached *m)
 int file_listxattr(file *f, char *list, size_t size, memcached *m)
 {
     return content_listxattr(&f->ex_cn, list, size, m);
-}
-
-void _create_ex_name(char *ex_path, const char *path)
-{
-    ex_path[0] = 'X';
-    memcpy(ex_path + 1, path, strlen(path) + 1);
 }

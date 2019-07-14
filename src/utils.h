@@ -33,4 +33,6 @@ char *get_par_path(const char *path);
 
 char *get_cur_path(const char *path);
 
+void create_ex_name(char *ex_path, const char *path);
+
 #endif // !UTILS_H

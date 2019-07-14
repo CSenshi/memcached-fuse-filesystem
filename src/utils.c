@@ -90,3 +90,9 @@ char *get_cur_path(const char *path)
     cur_path[strlen(path) - n] = '\0';
     return cur_path + 1;
 }
+
+void create_ex_name(char *ex_path, const char *path)
+{
+    ex_path[0] = 'X';
+    memcpy(ex_path + 1, path, strlen(path) + 1);
+}
