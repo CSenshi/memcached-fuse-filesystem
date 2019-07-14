@@ -468,23 +468,25 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
     if (info.value == NULL)
         return -ENOENT;
 
-    int err = 0;
+    int res = 0;
     if (info.flags & MM_DIR) // check if directory
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
-        return dir_getxattr(&d, name, value, size, m);
+        res = dir_getxattr(&d, name, value, size, m);
     }
     else if (info.flags & MM_FIL) // check if file
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
-        return file_getxattr(&f, name, value, size, m);
+        res = file_getxattr(&f, name, value, size, m);
     }
     else //error
-        return -1;
+        res = -1;
 
-    return 0;
+    if (res == -2)
+        res = -ENODATA;
+    return res;
 }
 
 /* List extended attributes */
@@ -508,17 +510,15 @@ int FS_listxattr(const char *path, char *list, size_t size)
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
         res = dir_listxattr(&d, list, size, m);
-        return res;
     }
     else if (info.flags & MM_FIL) // check if file
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
         res = file_listxattr(&f, list, size, m);
-        return res;
     }
     else //error
-        return -1;
+        res = -1;
 
     return res;
 }
@@ -538,22 +538,26 @@ int FS_removexattr(const char *path, const char *name)
     if (info.value == NULL)
         return -ENOENT;
 
-    int err = 0;
+    int res = 0;
     if (info.flags & MM_DIR) // check if directory
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
 
-        return dir_remxattr(&d, name, m);
+        res = dir_remxattr(&d, name, m);
     }
     else if (info.flags & MM_FIL) // check if file
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
 
-        return file_remxattr(&f, name, m);
+        res = file_remxattr(&f, name, m);
     }
-    return 0;
+    else
+        res = -1;
+    if (res == -2)
+        res = -ENODATA;
+    return res;
 }
 
 /* Change the permission bits of a file
