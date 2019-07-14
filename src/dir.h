@@ -17,6 +17,8 @@ typedef struct dir
     content ex_cn;
     content cn;
     int is_linked;
+    uid_t uid;
+    gid_t gid;
     mode_t mode;
 } dir;
 
@@ -27,9 +29,9 @@ typedef struct dir_childs
     char **arr;
 } dir_childs;
 
-int dir_create(const char *, mode_t, memcached *);
+int dir_create(const char *, mode_t, uid_t, gid_t, memcached *);
 
-void dir_init(dir *, const char *, mode_t, memcached *);
+void dir_init(dir *, const char *, mode_t, uid_t, gid_t, memcached *);
 
 void dir_append(dir *par_dir, const char *elem, memcached *m);
 
@@ -50,5 +52,7 @@ int dir_listxattr(dir *d, char *list, size_t size, memcached *m);
 int dir_create_symlink(dir *dir, const char *to_link, memcached *m);
 
 int dir_read_symlink(dir *d, char *buf, size_t size, memcached *m);
+
+int dir_change_mode(dir *d, mode_t mode, memcached *m);
 
 #endif // !DIR_H

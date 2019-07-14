@@ -5,10 +5,10 @@
 
 void _create_ex_name(char *ex_path, const char *path);
 
-int file_create(const char *path, mode_t mode, memcached *m)
+int file_create(const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *m)
 {
     file f;
-    file_init(&f, path, mode, m);
+    file_init(&f, path, mode, uid, gid, m);
 
     int res = memcached_add_struct(m, path, &f, sizeof(struct file), 0, MM_FIL);
 
@@ -23,13 +23,14 @@ int file_create(const char *path, mode_t mode, memcached *m)
     return 0;
 }
 
-void file_init(file *f, const char *path, mode_t mode, memcached *m)
+void file_init(file *f, const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *m)
 {
     // fil with zeros
     memset(f, 0, sizeof(struct file));
 
     f->_NOT_USED = -1;
-
+    f->gid = gid;
+    f->uid = uid;
     f->is_linked = 0;
     //parse
     parse_val prs = parse_path(path);
@@ -171,4 +172,10 @@ int file_read_symlink(file *f, char *buf, size_t size, memcached *m)
     if (read_bytes > 0)
         return 0;
     return -1;
+}
+
+int file_change_mode(file *f, mode_t mode, memcached *m)
+{
+    f->mode = mode;
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
 }

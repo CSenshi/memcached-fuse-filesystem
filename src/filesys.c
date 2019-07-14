@@ -21,8 +21,6 @@
 int FS_COUNT = 0;
 
 int _FS_check(memcached *m);
-void _FS_new(memcached *m);
-void _FS_recreate(memcached *m);
 
 /*  Initialize filesystem
  *
@@ -33,16 +31,22 @@ void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 {
     _debug_print_FS("\n%d FS : Called init%s\n", FS_COUNT++);
 
-    (void)conn;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
 
     // Initialize connection
     struct memcached *m = malloc(sizeof(struct memcached));
     memcached_init(m);
 
     if (_FS_check(m))
-        _FS_recreate(m);
+    {
+        // ToDo
+    }
     else
-        _FS_new(m);
+    {
+        memcached_flush(m);
+        mode_t root_mode = ACCESSPERMS;
+        dir_create("/", root_mode, context->uid, context->gid, m);
+    }
 
     return m;
 }
@@ -83,7 +87,7 @@ int FS_mkdir(const char *path, mode_t mode)
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
-    int res = dir_create(path, mode, m);
+    int res = dir_create(path, mode, context->uid, context->gid, m);
     return res;
 }
 
@@ -204,7 +208,7 @@ int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
-    int res = file_create(path, mode, m);
+    int res = file_create(path, mode, context->uid, context->gid, m);
     return res;
 }
 
@@ -382,8 +386,9 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
 
     memset(buf, 0, sizeof(struct stat));
 
-    buf->st_uid = getuid(); // The owner of the file/directory is the user who mounted the filesystem
-    buf->st_gid = getgid(); // The group of the file/directory is the same as the group of the user who mounted the filesystem
+    buf->st_blksize = DATA_SIZE;
+    buf->st_atime = time(NULL); // The last "a"ccess of the file/directory is right now
+    buf->st_mtime = time(NULL); // The last "m"odification of the file/directory is right now
 
     int err = 0;
     if (info.flags & MM_DIR) // check if directory
@@ -396,7 +401,10 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
             buf->st_mode = S_IFDIR | d.mode;
 
         buf->st_nlink = 2;
-        buf->st_size = strlen(d.dir_name);
+        buf->st_size = d.cn.size;
+        buf->st_uid = d.uid;
+        buf->st_gid = d.gid;
+        buf->st_blocks = buf->st_size / DATA_SIZE + 1;
     }
     else if (info.flags & MM_FIL) // check if file
     {
@@ -409,6 +417,9 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
 
         buf->st_nlink = 1;
         buf->st_size = file_get_size(&f, m);
+        buf->st_uid = f.uid;
+        buf->st_gid = f.gid;
+        buf->st_blocks = buf->st_size / DATA_SIZE + 1;
     }
     else //error
         err = -1;
@@ -579,6 +590,31 @@ int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     _debug_print_FS("\n%d FS : Called chmod  | path : %s\n", FS_COUNT++, path);
 
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    if (info.value == NULL)
+        return -ENOENT;
+
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+        if (d.uid != context->uid && context->uid != 0)
+            return -EPERM;
+        dir_change_mode(&d, mode, m);
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        if (f.uid != context->uid && context->uid != 0)
+            return -EPERM;
+        file_change_mode(&f, mode, m);
+    }
     return 0;
 }
 
@@ -631,7 +667,7 @@ int FS_symlink(const char *linkname, const char *path)
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
 
-        res = dir_create(path, d.mode, m);
+        res = dir_create(path, d.mode, d.uid, d.gid, m);
         memcached_get(m, path, &info);
         memcpy(&d, info.value, sizeof(struct file));
 
@@ -642,7 +678,7 @@ int FS_symlink(const char *linkname, const char *path)
         file f;
         memcpy(&f, info.value, sizeof(struct file));
 
-        res = file_create(path, f.mode, m);
+        res = file_create(path, f.mode, f.uid, f.gid, m);
         memcached_get(m, path, &info);
         memcpy(&f, info.value, sizeof(struct file));
 
@@ -706,23 +742,4 @@ int _FS_check(memcached *m)
         return 0;
 
     return 0;
-}
-
-void _FS_new(memcached *m)
-{
-    memcached_flush(m);
-
-    // // Insert inode counter
-    // char *index_key = int_to_str(INIT_INODE);
-    // struct mm_data_info index_info = {INDEX_KEY_STR, 0, 0, strlen(index_key), index_key};
-    // memcached_add(m, index_info);
-
-    // Add Root Directory
-    mode_t root_mode = 0;
-    dir_create("/", root_mode, m);
-}
-
-void _FS_recreate(memcached *m)
-{
-    (void)m;
 }

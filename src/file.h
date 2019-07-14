@@ -17,12 +17,14 @@ typedef struct file
     content ex_cn;
     content cn;
     int is_linked;
+    uid_t uid;
+    gid_t gid;
     mode_t mode;
 } file;
 
-int file_create(const char *, mode_t, memcached *m);
+int file_create(const char *, mode_t, uid_t, gid_t, memcached *);
 
-void file_init(file *, const char *, mode_t, memcached *);
+void file_init(file *, const char *, mode_t, uid_t, gid_t, memcached *);
 
 int file_write(file *, const char *, size_t, off_t, memcached *);
 
@@ -43,5 +45,7 @@ int file_listxattr(file *f, char *list, size_t size, memcached *m);
 int file_create_symlink(file *f, const char *to_link, memcached *m);
 
 int file_read_symlink(file *f, char *buf, size_t size, memcached *m);
+
+int file_change_mode(file *f, mode_t mode, memcached *m);
 
 #endif // FILE_H

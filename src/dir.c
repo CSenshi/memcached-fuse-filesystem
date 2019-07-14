@@ -5,10 +5,10 @@
 
 void _create_dir_entry_str(const char *, char *);
 
-int dir_create(const char *path, mode_t mode, memcached *m)
+int dir_create(const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *m)
 {
     dir new_dir;
-    dir_init(&new_dir, path, mode, m);
+    dir_init(&new_dir, path, mode, uid, gid, m);
 
     int res = memcached_add_struct(m, path, &new_dir, sizeof(struct dir), 0, MM_DIR);
 
@@ -24,13 +24,14 @@ int dir_create(const char *path, mode_t mode, memcached *m)
     return 0;
 }
 
-void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
+void dir_init(dir *d, const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *m)
 {
     // fill with zeros
     memset(d, 0, sizeof(struct dir));
 
     d->_NOT_USED = -1;
-
+    d->gid = gid;
+    d->uid = uid;
     d->is_linked = 0;
 
     //parse
@@ -219,6 +220,12 @@ int dir_read_symlink(dir *d, char *buf, size_t size, memcached *m)
     if (read_bytes > 0)
         return 0;
     return -1;
+}
+
+int dir_change_mode(dir *d, mode_t mode, memcached *m)
+{
+    d->mode = mode;
+    memcached_replace_struct(m, d->cn.path, d, sizeof(struct dir), 0, MM_DIR);
 }
 
 void _create_dir_entry_str(const char *elem, char *buf)
