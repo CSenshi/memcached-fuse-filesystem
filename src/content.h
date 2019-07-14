@@ -24,7 +24,7 @@ int content_read(content *, int, int, char *, memcached *);
 
 int content_write(content *, int, int, const char *, memcached *);
 
-int content_append(content *, int, char *, memcached *);
+int content_append(content *, int, const char *, memcached *);
 
 int content_read_full_chunk(content *, int, char *, memcached *);
 
@@ -37,5 +37,9 @@ int content_getxattr(content *cn, const char *name, char *buf, size_t size, memc
 int content_remxattr(content *cn, const char *name, memcached *m, parse_val *pv);
 
 int content_listxattr(content *cn, char *list, size_t size, memcached *m);
+
+int content_create_symlink(content *cn, const char *to_link, memcached *m);
+
+int content_read_symlink(content *cn, char *buf, size_t size, memcached *m);
 
 #endif // !CONTENT_H

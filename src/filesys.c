@@ -31,7 +31,7 @@ void _FS_recreate(memcached *m);
  *  It overrides the initial value provided to fuse_main() / fuse_new().*/
 void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 {
-    _debug_print_FS("\n%d FS : Called init\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called init%s\n", FS_COUNT++);
 
     (void)conn;
 
@@ -52,7 +52,7 @@ void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
  * Called on filesystem exit. */
 void FS_destroy(void *private_data)
 {
-    _debug_print_FS("\n%d FS : Called destroy\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called destroy \n", FS_COUNT++);
 
     memcached *m = (memcached *)private_data;
     memcached_exit(m);
@@ -63,7 +63,7 @@ void FS_destroy(void *private_data)
  * The 'f_favail', 'f_fsid' and 'f_flag' fields are ignored */
 int FS_statfs(const char *path, struct statvfs *buf)
 {
-    _debug_print_FS("\n%d FS : Called statfs\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called statfs  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -78,7 +78,7 @@ int FS_statfs(const char *path, struct statvfs *buf)
  *      mkdir() return  zero  on  success,  or  -1  if  an  error */
 int FS_mkdir(const char *path, mode_t mode)
 {
-    _debug_print_FS("\n%d FS : Called mkdir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called mkdir  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -90,7 +90,7 @@ int FS_mkdir(const char *path, mode_t mode)
 /* Remove a directory */
 int FS_rmdir(const char *path)
 {
-    _debug_print_FS("\n%d FS : Called rmdir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called rmdir  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -106,7 +106,7 @@ int FS_rmdir(const char *path)
  * which will be passed to readdir, releasedir and fsyncdir. */
 int FS_opendir(const char *path, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called opendir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called opendir  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -125,7 +125,7 @@ int FS_opendir(const char *path, struct fuse_file_info *fi)
  *    When the buffer is full (or an error happens) the filler function will return '1'. */
 int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 {
-    _debug_print_FS("\n%d FS : Called readdir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called readdir  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -165,7 +165,7 @@ int FS_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t off, s
 /* Release directory */
 int FS_releasedir(const char *path, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called releasedir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called releasedir  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -175,7 +175,7 @@ int FS_releasedir(const char *path, struct fuse_file_info *fi)
  * If the datasync parameter is non-zero, then only the user data should be flushed, not the meta data */
 int FS_fsyncdir(const char *path, int datasync, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called fsyncdir\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called fsyncdir  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -183,7 +183,7 @@ int FS_fsyncdir(const char *path, int datasync, struct fuse_file_info *fi)
 /* Remove a file */
 int FS_unlink(const char *path)
 {
-    _debug_print_FS("\n%d FS : Called unlink\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called unlink  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -199,7 +199,7 @@ int FS_unlink(const char *path)
  * the mknod() and open() methods will be called instead. */
 int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called create\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called create  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -237,7 +237,7 @@ int FS_create(const char *path, mode_t mode, struct fuse_file_info *fi)
  * this is treated as success and future calls to open will also succeed without being send to the filesystem process. */
 int FS_open(const char *path, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called open\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called open  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -250,7 +250,7 @@ int FS_open(const char *path, struct fuse_file_info *fi)
  * in which case the return value of the read system call will reflect the return value of this operation. */
 int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called read\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called read  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -281,7 +281,7 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
  * Unless FUSE_CAP_HANDLE_KILLPRIV is disabled, this method is expected to reset the setuid and setgid bits. */
 int FS_write(const char *path, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called write\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called write  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -313,7 +313,7 @@ int FS_write(const char *path, const char *buf, size_t size, off_t off, struct f
  * that no more reads/writes will happen on the file. The return value of release is ignored. */
 int FS_release(const char *path, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called release\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called release  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -343,7 +343,7 @@ int FS_release(const char *path, struct fuse_file_info *fi)
  * It may be called more times than expected, or not at all. */
 int FS_flush(const char *path, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called flush\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called flush  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -353,7 +353,7 @@ int FS_flush(const char *path, struct fuse_file_info *fi)
  * If the datasync parameter is non-zero, then only the user data should be flushed, not the meta data. */
 int FS_fsync(const char *path, int datasync, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called fsync\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called fsync  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -368,7 +368,7 @@ int FS_fsync(const char *path, int datasync, struct fuse_file_info *fi)
  * fi will always be NULL if the file is not currently open, but may also be NULL if the file is open. */
 int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called getattr\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called getattr  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -398,7 +398,11 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
-        buf->st_mode = S_IFREG | f.mode;
+        if (f.is_linked)
+            buf->st_mode = S_IFLNK | f.mode;
+        else
+            buf->st_mode = S_IFREG | f.mode;
+
         buf->st_nlink = 1;
         buf->st_size = file_get_size(&f, m);
     }
@@ -416,7 +420,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
  * This method is not called under Linux kernel versions 2.4.x */
 int FS_access(const char *path, int mask)
 {
-    _debug_print_FS("\n%d FS : Called access\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called access  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -424,7 +428,7 @@ int FS_access(const char *path, int mask)
 /* Set extended attributes */
 int FS_setxattr(const char *path, const char *name, const char *value, size_t size, int flags)
 {
-    _debug_print_FS("\n%d FS : Called setxattr\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called setxattr  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -459,7 +463,7 @@ int FS_setxattr(const char *path, const char *name, const char *value, size_t si
 /* Get extended attributes */
 int FS_getxattr(const char *path, const char *name, char *value, size_t size)
 {
-    _debug_print_FS("\n%d FS : Called getxattr\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called getxattr  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -495,7 +499,7 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
 /* List extended attributes */
 int FS_listxattr(const char *path, char *list, size_t size)
 {
-    _debug_print_FS("\n%d FS : Called listxattr\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called listxattr  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -529,7 +533,7 @@ int FS_listxattr(const char *path, char *list, size_t size)
 /* Remove extended attributes */
 int FS_removexattr(const char *path, const char *name)
 {
-    _debug_print_FS("\n%d FS : Called removexattr\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called removexattr  | path : %s\n", FS_COUNT++, path);
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -569,7 +573,7 @@ int FS_removexattr(const char *path, const char *name)
  * but may also be NULL if the file is open. */
 int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called chmod\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called chmod  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -583,7 +587,7 @@ int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
  * this method is expected to reset the setuid and setgid bits. */
 int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 {
-    _debug_print_FS("\n%d FS : Called chown\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called chown  | path : %s\n", FS_COUNT++, path);
 
     return 0;
 }
@@ -591,7 +595,7 @@ int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 /* Create a hard link to a file */
 int FS_link(const char *oldpath, const char *newpath)
 {
-    _debug_print_FS("\n%d FS : Called link\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called link  | path : %s\n", FS_COUNT++, newpath);
 
     return 0;
 }
@@ -599,9 +603,42 @@ int FS_link(const char *oldpath, const char *newpath)
 /* Create a symbolic link */
 int FS_symlink(const char *linkname, const char *path)
 {
-    _debug_print_FS("\n%d FS : Called symlink\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called symlink  | path : %s\n", FS_COUNT++, path);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    char *par_dir = get_par_path(path);
+
+    int to_alloc = strlen(linkname) + strlen(par_dir);
+    char link_path[to_alloc];
+    memcpy(link_path, par_dir, strlen(par_dir));
+    memcpy(link_path + strlen(par_dir), linkname, strlen(linkname) + 1);
+
+    mm_data_info info;
+    memcached_get(m, link_path, &info);
+
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int res = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+
+        res = file_create(path, f.mode, m);
+        memcached_get(m, path, &info);
+        memcpy(&f, info.value, sizeof(struct file));
+
+        res = file_create_symlink(&f, linkname, m);
+    }
+    return res;
 }
 
 /* Read the target of a symbolic link
@@ -612,9 +649,33 @@ int FS_symlink(const char *linkname, const char *path)
  * The return value should be 0 for success. */
 int FS_readlink(const char *path, char *buf, size_t size)
 {
-    _debug_print_FS("\n%d FS : Called readlink\n", FS_COUNT++);
+    _debug_print_FS("\n%d FS : Called readlink  | path : %s\n", FS_COUNT++, path);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int res = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+
+        res = file_read_symlink(&f, buf, size, m);
+    }
+
+    return res;
 }
 
 /* Change the access and modification times of a file with nanosecond resolution

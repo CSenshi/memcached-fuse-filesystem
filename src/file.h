@@ -16,6 +16,7 @@ typedef struct file
     char file_name[MAX_FNAME];
     content ex_cn;
     content cn;
+    int is_linked;
     mode_t mode;
 } file;
 
@@ -38,5 +39,9 @@ int file_getxattr(file *, const char *name, char *buf, size_t size, memcached *m
 int file_remxattr(file *, const char *name, memcached *m);
 
 int file_listxattr(file *f, char *list, size_t size, memcached *m);
+
+int file_create_symlink(file *f, const char *to_link, memcached *m);
+
+int file_read_symlink(file *f, char *buf, size_t size, memcached *m);
 
 #endif // FILE_H

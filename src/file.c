@@ -30,6 +30,7 @@ void file_init(file *f, const char *path, mode_t mode, memcached *m)
 
     f->_NOT_USED = -1;
 
+    f->is_linked = 0;
     //parse
     parse_val prs = parse_path(path);
     memcpy(f->file_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
@@ -86,7 +87,7 @@ int file_rm(const char *path, memcached *m)
 
             memcached_delete(m, path);
             ind = i;
-            // break;
+            break;
         }
     }
     if (ind == -1)
@@ -152,5 +153,22 @@ int file_remxattr(file *f, const char *name, memcached *m)
 
 int file_listxattr(file *f, char *list, size_t size, memcached *m)
 {
-    return content_listxattr(&f->ex_cn, list, size, m);
+    int written_bytes = content_listxattr(&f->ex_cn, list, size, m);
+    return written_bytes;
+}
+
+int file_create_symlink(file *f, const char *to_link, memcached *m)
+{
+    f->is_linked = -1;
+    content_create_symlink(&f->cn, to_link, m);
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    return 0;
+}
+
+int file_read_symlink(file *f, char *buf, size_t size, memcached *m)
+{
+    int read_bytes = content_read_symlink(&f->cn, buf, size, m);
+    if (read_bytes > 0)
+        return 0;
+    return -1;
 }

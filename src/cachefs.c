@@ -38,8 +38,8 @@ static struct fuse_operations operations = {
     .chown = FS_chown,
     .link = FS_link,
     .symlink = FS_symlink,
-    .utimens = FS_utimens,
-};
+    .readlink = FS_readlink,
+    .utimens = FS_utimens};
 
 int main(int argc, char *argv[])
 {

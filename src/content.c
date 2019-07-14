@@ -54,7 +54,7 @@ int content_write(content *cn, int off_t, int size, const char *buf, memcached *
     return written_bytes;
 }
 
-int content_append(content *cn, int size, char *buf, memcached *m)
+int content_append(content *cn, int size, const char *buf, memcached *m)
 {
     int total = 0, written_bytes = 0;
     while (written_bytes = content_write(cn, cn->size, size - total, buf + total, m),
@@ -273,7 +273,6 @@ int content_listxattr(content *cn, char *list, size_t size, memcached *m)
         memcpy(val2, s + ind, len2);
         val2[len2] = '\0';
         ind += len2;
-
         if (DATA_SIZE < ind)
         {
             chunk_ind++;
@@ -285,6 +284,17 @@ int content_listxattr(content *cn, char *list, size_t size, memcached *m)
     }
 
     return total;
+}
+
+int content_create_symlink(content *cn, const char *to_link, memcached *m)
+{
+    int bytes = content_append(cn, strlen(to_link), to_link, m);
+    return bytes;
+}
+
+int content_read_symlink(content *cn, char *buf, size_t size, memcached *m)
+{
+    return content_read(cn, 0, size, buf, m);
 }
 
 void _content_to_str(int n, content *cn, char *buf)
