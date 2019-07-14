@@ -78,8 +78,8 @@ test4(){
     echo "Test 4 : Write/Append Data"
     
     TEST_FILE="test_append.txt"
-    
     TEST_CONTENT="KILL!!!"
+    
     echo "$CMD echo TEST_CONTENT >> $TEST_FILE"
     echo $TEST_CONTENT >> $TEST_FILE
     
@@ -103,6 +103,33 @@ test4(){
     echo
 }
 
+test5(){
+    echo "Test 5 : checking removing file"
+    TEST_FILE0="file_to_delete_0.txt"
+    TEST_FILE1="file_to_delete_1.txt"
+    TEST_FILE2="just_file.txt"
+    
+    echo "$CMD touch $TEST_FILE0"
+    touch $TEST_FILE0
+    
+    echo "$CMD touch $TEST_FILE1"
+    touch $TEST_FILE1
+    
+    echo "$CMD ls"
+    ls
+    
+    echo "$CMD rm $TEST_FILE0"
+    rm $TEST_FILE0
+    
+    echo "$CMD rm $TEST_FILE1"
+    rm $TEST_FILE1
+    
+    echo "$CMD ls"
+    ls
+    
+    echo "Done!"
+    echo
+}
 run_test(){
     # Base Test Make 10 files
     test1 10
@@ -115,6 +142,9 @@ run_test(){
     
     # Write and append data
     test4
+    
+    # deleting files
+    test5
 }
 
 

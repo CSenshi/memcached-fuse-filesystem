@@ -185,7 +185,10 @@ int FS_unlink(const char *path)
 {
     _debug_print_FS("\n%d FS : Called unlink\n", FS_COUNT++);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    return file_rm(path, m);
 }
 
 /* Create and open a file
@@ -387,7 +390,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
-        buf->st_mode = S_IFDIR | 0755;
+        buf->st_mode = S_IFDIR | d.mode;
         buf->st_nlink = 2;
         buf->st_size = strlen(d.dir_name);
     }
@@ -395,7 +398,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
-        buf->st_mode = S_IFREG | 0444;
+        buf->st_mode = S_IFREG | f.mode;
         buf->st_nlink = 1;
         buf->st_size = file_get_size(&f, m);
     }

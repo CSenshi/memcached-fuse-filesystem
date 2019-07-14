@@ -62,6 +62,52 @@ int file_get_size(file *f, memcached *m)
     return f->cn.size;
 }
 
+int file_rm(const char *path, memcached *m)
+{
+    char *par_path = get_par_path(path);
+    char *cur_path = get_cur_path(path);
+
+    dir pd;
+    dir_mmch_getdir(par_path, m, &pd);
+
+    dir_childs dc;
+    dir_get_childs(&pd, m, &dc);
+    int ind = -1;
+
+    for (int i = 0; i < dc.n; i++)
+    {
+        if (!strcmp(dc.arr[i], cur_path))
+        {
+            dir d;
+            dir_mmch_getdir(path, m, &d);
+            content dir_con = d.cn;
+            if (dir_con.size != 0)
+                return -1;
+
+            memcached_delete(m, path);
+            ind = i;
+            // break;
+        }
+    }
+    if (ind == -1)
+        return -1;
+
+    content_free(&pd.cn, m);
+    content_init(&pd.cn, par_path, m);
+    memcached_set_struct(m, pd.dir_name, &pd, sizeof(struct dir), 0, MM_DIR);
+    char str[1500] = {0};
+    dir d;
+    for (int i = 0; i < dc.n; i++)
+    {
+        if (ind == i)
+            continue;
+
+        char *cur_child = dc.arr[i];
+        dir_append(&pd, cur_child, m);
+    }
+    return 0;
+}
+
 int file_setxattr(file *f, const char *name, const char *value, size_t size, memcached *m)
 {
     int exists = content_getxattr(&f->ex_cn, name, NULL, size, m);
