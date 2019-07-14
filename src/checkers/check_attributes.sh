@@ -74,7 +74,7 @@ test2(){
     ATTR_KEY="TEST_KEY"
     ATTR_VAL="TEST_VALUE"
     
-    TOTAL=99
+    TOTAL=50
     
     # set atribute
     for t in $(seq 1 $TOTAL);
@@ -94,6 +94,10 @@ test2(){
         # echo user.$ATTR_KEY$t
         setfattr -x user.$ATTR_KEY$t $FILE_NAME
     done;
+    
+    # list atributes
+    echo "$CMD getfattr -d $FILE_NAME (should not return list)"
+    getfattr -d $FILE_NAME
     
     echo "Done!"
     echo
