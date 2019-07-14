@@ -3,6 +3,7 @@
 
 #include "chunk.h"
 #include "memcached.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,5 +33,9 @@ void content_free(content *, memcached *);
 int content_setxattr(content *cn, const char *name, const char *value, int size, memcached *m);
 
 int content_getxattr(content *cn, const char *name, char *buf, size_t size, memcached *m);
+
+int content_remxattr(content *cn, const char *name, memcached *m, parse_val *pv);
+
+int content_listxattr(content *cn, char *list, size_t size, memcached *m);
 
 #endif // !CONTENT_H

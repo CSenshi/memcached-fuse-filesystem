@@ -485,9 +485,36 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
 }
 
 /* List extended attributes */
-int FS_listxattr(const char *path, char *lsit, size_t size)
+int FS_listxattr(const char *path, char *list, size_t size)
 {
     _debug_print_FS("\n%d FS : Called listxattr\n", FS_COUNT++);
+
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int err = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        int res = file_listxattr(&f, list, size, m);
+        printf("&&&&&&&&&&&&&&&&&& %d\n", res);
+        return res;
+    }
+    else //error
+        return -1;
 
     return 0;
 }
@@ -497,6 +524,29 @@ int FS_removexattr(const char *path, const char *name)
 {
     _debug_print_FS("\n%d FS : Called removexattr\n", FS_COUNT++);
 
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    // file was not found
+    if (info.value == NULL)
+        return -ENOENT;
+
+    int err = 0;
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+
+        return file_remxattr(&f, name, m);
+    }
     return 0;
 }
 

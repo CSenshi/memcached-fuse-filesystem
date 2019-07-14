@@ -33,4 +33,8 @@ int file_setxattr(file *, const char *name, const char *value, size_t size, memc
 
 int file_getxattr(file *, const char *name, char *buf, size_t size, memcached *m);
 
+int file_remxattr(file *, const char *name, memcached *m);
+
+int file_listxattr(file *f, char *list, size_t size, memcached *m);
+
 #endif // FILE_H

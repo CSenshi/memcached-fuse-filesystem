@@ -148,9 +148,9 @@ int content_getxattr(content *cn, const char *name, char *buf, size_t size, memc
         {
             if (buf)
                 memcpy(buf, val2, size);
-
             return len2;
         }
+
         if (DATA_SIZE < ind)
         {
             chunk_ind++;
@@ -161,6 +161,130 @@ int content_getxattr(content *cn, const char *name, char *buf, size_t size, memc
         }
     }
     return -2;
+}
+
+int content_remxattr(content *cn, const char *name, memcached *m, parse_val *pv)
+{
+    char s[2 * DATA_SIZE] = {0};
+    int read_data = content_read_full_chunk(cn, 0, s, m);
+    if (cn->size > DATA_SIZE)
+        read_data += content_read_full_chunk(cn, 1, s + DATA_SIZE, m);
+    int ind = 0;
+
+    pv->alloc = 10;
+    pv->n = 0;
+    pv->arr = malloc(sizeof(char *) * pv->alloc);
+    int found = -1;
+    int chunk_ind = 1;
+    while (ind < read_data)
+    {
+        pv->n++;
+        int cur = ind;
+        // get length 1
+        char cp_len1[OFF_LEN + 1];
+        memcpy(cp_len1, s + ind, OFF_LEN);
+        cp_len1[OFF_LEN] = '\0';
+        int len1 = str_to_int(cp_len1);
+        ind += OFF_LEN;
+
+        // get value 1;
+        char val1[len1 + 1];
+        memcpy(val1, s + ind, len1);
+        val1[len1] = '\0';
+        ind += len1;
+
+        // get length 2
+        char cp_len2[OFF_LEN + 1];
+        memcpy(cp_len2, s + ind, OFF_LEN);
+        cp_len2[OFF_LEN] = '\0';
+        int len2 = str_to_int(cp_len2);
+        ind += OFF_LEN;
+
+        // get value 2;
+        char val2[len2 + 1];
+        memcpy(val2, s + ind, len2);
+        val2[len2] = '\0';
+        ind += len2;
+
+        int end = ind;
+        pv->arr[pv->n - 1] = malloc(end - cur + 1);
+        memcpy(pv->arr[pv->n - 1], s + cur, end - cur);
+        pv->arr[pv->n - 1][end - cur] = '\0';
+
+        if (pv->alloc == pv->n)
+        {
+            pv->alloc += 10;
+            pv->arr = realloc(pv->arr, sizeof(char *) * pv->alloc);
+        }
+
+        if (!strcmp(val1, name))
+            found = pv->n - 1;
+
+        if (DATA_SIZE < ind)
+        {
+            chunk_ind++;
+            memmove(s, s + DATA_SIZE, DATA_SIZE);
+            ind -= DATA_SIZE;
+            read_data -= DATA_SIZE;
+            read_data += content_read_full_chunk(cn, chunk_ind, s + DATA_SIZE, m);
+        }
+    }
+    return found;
+}
+
+int content_listxattr(content *cn, char *list, size_t size, memcached *m)
+{
+    char s[2 * DATA_SIZE] = {0};
+    int read_data = content_read_full_chunk(cn, 0, s, m);
+    if (cn->size > DATA_SIZE)
+        read_data += content_read_full_chunk(cn, 1, s + DATA_SIZE, m);
+    int ind = 0;
+
+    int total = 0;
+    int chunk_ind = 1;
+    while (ind < read_data)
+    {
+        // get length 1
+        char cp_len1[OFF_LEN + 1];
+        memcpy(cp_len1, s + ind, OFF_LEN);
+        cp_len1[OFF_LEN] = '\0';
+        int len1 = str_to_int(cp_len1);
+        ind += OFF_LEN;
+
+        // get value 1;
+        char val1[len1 + 1];
+        memcpy(val1, s + ind, len1);
+        val1[len1] = '\0';
+        ind += len1;
+
+        if (list)
+            memcpy(list + total, val1, len1 + 1);
+        total += len1 + 1;
+
+        // get length 2
+        char cp_len2[OFF_LEN + 1];
+        memcpy(cp_len2, s + ind, OFF_LEN);
+        cp_len2[OFF_LEN] = '\0';
+        int len2 = str_to_int(cp_len2);
+        ind += OFF_LEN;
+
+        // get value 2;
+        char val2[len2 + 1];
+        memcpy(val2, s + ind, len2);
+        val2[len2] = '\0';
+        ind += len2;
+
+        if (DATA_SIZE < ind)
+        {
+            chunk_ind++;
+            memmove(s, s + DATA_SIZE, DATA_SIZE);
+            ind -= DATA_SIZE;
+            read_data -= DATA_SIZE;
+            read_data += content_read_full_chunk(cn, chunk_ind, s + DATA_SIZE, m);
+        }
+    }
+
+    return total;
 }
 
 void _content_to_str(int n, content *cn, char *buf)

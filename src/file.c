@@ -66,9 +66,11 @@ int file_get_size(file *f, memcached *m)
 int file_setxattr(file *f, const char *name, const char *value, size_t size, memcached *m)
 {
     int exists = content_getxattr(&f->ex_cn, name, NULL, size, m);
-    if (exists != -2)
-        return 1;
-    int res = content_setxattr(&f->ex_cn, name, value, size, m);
+    int res;
+    if (exists != -2) // if exists
+        file_remxattr(f, name, m);
+
+    res = content_setxattr(&f->ex_cn, name, value, size, m);
     memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
     return res;
 }
@@ -76,6 +78,33 @@ int file_setxattr(file *f, const char *name, const char *value, size_t size, mem
 int file_getxattr(file *f, const char *name, char *buf, size_t size, memcached *m)
 {
     return content_getxattr(&f->ex_cn, name, buf, size, m);
+}
+
+int file_remxattr(file *f, const char *name, memcached *m)
+{
+    parse_val pv;
+    int res = content_remxattr(&f->ex_cn, name, m, &pv);
+    if (res == -1)
+        return -2;
+
+    content_free(&f->ex_cn, m);
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    content_init(&f->ex_cn, f->ex_cn.path, m);
+    for (int i = 0; i < pv.n; i++)
+    {
+        if (res == i)
+            continue;
+        content_append(&f->ex_cn, strlen(pv.arr[i]), pv.arr[i], m);
+    }
+
+    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+
+    return 0;
+}
+
+int file_listxattr(file *f, char *list, size_t size, memcached *m)
+{
+    return content_listxattr(&f->ex_cn, list, size, m);
 }
 
 void _create_ex_name(char *ex_path, const char *path)

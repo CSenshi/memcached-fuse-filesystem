@@ -14,6 +14,7 @@
 
 typedef struct parse_val
 {
+    int alloc;
     int n;
     char **arr;
 } parse_val;
