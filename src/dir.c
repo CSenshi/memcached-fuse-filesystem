@@ -36,6 +36,11 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
     memcpy(d->dir_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
 
     content_init(&d->cn, path, m);
+
+    char ex_path[MAX_FNAME];
+    create_ex_name(ex_path, path);
+    content_init(&d->ex_cn, ex_path, m);
+
     d->mode = mode;
 }
 
@@ -148,6 +153,54 @@ void dir_get_childs(dir *d, memcached *m, dir_childs *dc)
             read_data += content_read_full_chunk(&d->cn, chunk_ind, s + DATA_SIZE, m);
         }
     }
+}
+
+int dir_setxattr(dir *d, const char *name, const char *value, size_t size, memcached *m)
+{
+    int exists = content_getxattr(&d->ex_cn, name, NULL, size, m);
+    int res;
+    if (exists != -2) // if exists
+        dir_remxattr(d, name, m);
+
+    res = content_setxattr(&d->ex_cn, name, value, size, m);
+
+    memcached_replace_struct(m, d->cn.path, d, sizeof(struct dir), 0, MM_DIR);
+    return res;
+}
+
+int dir_getxattr(dir *d, const char *name, char *buf, size_t size, memcached *m)
+{
+    return content_getxattr(&d->ex_cn, name, buf, size, m);
+}
+
+int dir_remxattr(dir *d, const char *name, memcached *m)
+{
+    parse_val pv;
+    int res = content_remxattr(&d->ex_cn, name, m, &pv);
+    if (res == -1)
+        return -2;
+
+    content_free(&d->ex_cn, m);
+    memcached_replace_struct(m, d->dir_name, d, sizeof(struct dir), 0, MM_DIR);
+
+    char ex_path[MAX_FNAME];
+    create_ex_name(ex_path, d->dir_name);
+    content_init(&d->ex_cn, strdup(d->ex_cn.path), m);
+    for (int i = 0; i < pv.n; i++)
+    {
+        if (res == i)
+            continue;
+        content_append(&d->ex_cn, strlen(pv.arr[i]), pv.arr[i], m);
+    }
+
+    memcached_replace_struct(m, d->dir_name, d, sizeof(struct dir), 0, MM_DIR);
+
+    return 0;
+}
+
+int dir_listxattr(dir *d, char *list, size_t size, memcached *m)
+{
+    return content_listxattr(&d->ex_cn, list, size, m);
 }
 
 void _create_dir_entry_str(const char *elem, char *buf)

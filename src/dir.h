@@ -14,8 +14,9 @@ typedef struct dir
 {
     int _NOT_USED;
     char dir_name[MAX_FNAME];
-    mode_t mode;
+    content ex_cn;
     content cn;
+    mode_t mode;
 } dir;
 
 typedef struct dir_childs
@@ -36,5 +37,13 @@ int dir_rmdir(const char *path, memcached *m);
 void dir_mmch_getdir(const char *, memcached *, dir *);
 
 void dir_get_childs(dir *d, memcached *m, dir_childs *dc);
+
+int dir_setxattr(dir *, const char *name, const char *value, size_t size, memcached *m);
+
+int dir_getxattr(dir *, const char *name, char *buf, size_t size, memcached *m);
+
+int dir_remxattr(dir *, const char *name, memcached *m);
+
+int dir_listxattr(dir *d, char *list, size_t size, memcached *m);
 
 #endif // !DIR_H
