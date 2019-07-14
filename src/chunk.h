@@ -3,7 +3,7 @@
 
 #include "memcached.h"
 
-#define DATA_SIZE 1024
+#define DATA_SIZE 4096
 #define MAX_FNAME 250
 
 typedef struct chunk

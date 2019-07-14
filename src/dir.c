@@ -31,6 +31,8 @@ void dir_init(dir *d, const char *path, mode_t mode, memcached *m)
 
     d->_NOT_USED = -1;
 
+    d->is_linked = 0;
+
     //parse
     parse_val prs = parse_path(path);
     memcpy(d->dir_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
@@ -201,6 +203,22 @@ int dir_remxattr(dir *d, const char *name, memcached *m)
 int dir_listxattr(dir *d, char *list, size_t size, memcached *m)
 {
     return content_listxattr(&d->ex_cn, list, size, m);
+}
+
+int dir_create_symlink(dir *dir, const char *to_link, memcached *m)
+{
+    dir->is_linked = -1;
+    content_create_symlink(&dir->cn, to_link, m);
+    memcached_replace_struct(m, dir->cn.path, dir, sizeof(struct dir), 0, MM_FIL);
+    return 0;
+}
+
+int dir_read_symlink(dir *d, char *buf, size_t size, memcached *m)
+{
+    int read_bytes = content_read_symlink(&d->cn, buf, size, m);
+    if (read_bytes > 0)
+        return 0;
+    return -1;
 }
 
 void _create_dir_entry_str(const char *elem, char *buf)

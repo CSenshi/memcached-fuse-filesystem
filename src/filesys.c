@@ -390,7 +390,11 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
-        buf->st_mode = S_IFDIR | d.mode;
+        if (d.is_linked)
+            buf->st_mode = S_IFLNK | d.mode;
+        else
+            buf->st_mode = S_IFDIR | d.mode;
+
         buf->st_nlink = 2;
         buf->st_size = strlen(d.dir_name);
     }
@@ -621,11 +625,17 @@ int FS_symlink(const char *linkname, const char *path)
     if (info.value == NULL)
         return -ENOENT;
 
-    int res = 0;
+    int res = -1;
     if (info.flags & MM_DIR) // check if directory
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
+
+        res = dir_create(path, d.mode, m);
+        memcached_get(m, path, &info);
+        memcpy(&d, info.value, sizeof(struct file));
+
+        res = dir_create_symlink(&d, linkname, m);
     }
     else if (info.flags & MM_FIL) // check if file
     {

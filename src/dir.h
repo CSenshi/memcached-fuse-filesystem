@@ -16,6 +16,7 @@ typedef struct dir
     char dir_name[MAX_FNAME];
     content ex_cn;
     content cn;
+    int is_linked;
     mode_t mode;
 } dir;
 
@@ -45,5 +46,9 @@ int dir_getxattr(dir *, const char *name, char *buf, size_t size, memcached *m);
 int dir_remxattr(dir *, const char *name, memcached *m);
 
 int dir_listxattr(dir *d, char *list, size_t size, memcached *m);
+
+int dir_create_symlink(dir *dir, const char *to_link, memcached *m);
+
+int dir_read_symlink(dir *d, char *buf, size_t size, memcached *m);
 
 #endif // !DIR_H

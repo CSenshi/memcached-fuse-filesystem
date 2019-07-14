@@ -12,6 +12,7 @@ fi
 MOUNT_DIR=$1
 cd $MOUNT_DIR
 
+
 CMD="#### Command : "
 
 test1(){
@@ -31,7 +32,7 @@ test1(){
     echo
     
     echo "$CMD ls -l"
-    ls -l
+    ls --color=auto -l
     echo
     
     echo "$CMD cat $FILE1"
@@ -72,7 +73,7 @@ test2(){
     
     echo
     echo "$CMD ls -l"
-    ls -l
+    ls --color=auto -l
     echo
     
     echo "$CMD cat $FILE_MM$MAX_NUM"
@@ -83,6 +84,37 @@ test2(){
     echo
 }
 
+test3(){
+    echo "Test 3 : link direcotires"
+    
+    DIR="dir"
+    DIR_TO_LINK="dir_to_link"
+    
+    mkdir $DIR
+    mkdir $DIR/a
+    mkdir $DIR/b
+    mkdir $DIR/c
+    mkdir $DIR/d
+    touch $DIR/file
+    
+    echo "$CMD ln -s $DIR $DIR_TO_LINK"
+    ln -s $DIR $DIR_TO_LINK
+    echo
+    
+    echo "$CMD ls -l"
+    ls --color=auto -l
+    echo
+    
+    echo "$CMD ls $DIR"
+    ls --color=auto  $DIR
+    echo
+    
+    echo "$CMD ls  $DIR_TO_LINK"
+    ls --color=auto  $DIR_TO_LINK
+    echo
+    
+}
+
 
 run_test(){
     # check basic symlinking
@@ -90,6 +122,10 @@ run_test(){
     
     # check symlinking to multiple sources
     test2
+    
+    # check for directories
+    test3
+    
 }
 
 
