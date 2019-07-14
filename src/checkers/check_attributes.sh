@@ -91,7 +91,8 @@ test2(){
     # remove atributes
     for t in $(seq 1 $TOTAL);
     do
-        setfattr -x user.$ATTR_KEY$t $FILE_NAME$t
+        # echo user.$ATTR_KEY$t
+        setfattr -x user.$ATTR_KEY$t $FILE_NAME
     done;
     
     echo "Done!"
@@ -99,7 +100,7 @@ test2(){
 }
 
 test3(){
-    echo "Test 1 : set/get/remove/list External Attributes"
+    echo "Test 3 : set/get/remove/list External Attributes"
     
     FILE_NAME="test_attr_3.txt"
     
@@ -139,10 +140,6 @@ test3(){
     echo "$CMD getfattr -n user.$ATTR_KEY $FILE_NAME (should return value)"
     getfattr -n user.$ATTR_KEY $FILE_NAME
     
-    
-    echo "$CMD touch $FILE_NAME"
-    touch $FILE_NAME
-    echo
 }
 
 run_test(){
