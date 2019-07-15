@@ -510,7 +510,6 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
         res = -ENODATA;
     return res;
 }
-
 /* List extended attributes */
 int FS_listxattr(const char *path, char *list, size_t size)
 {
@@ -629,6 +628,65 @@ int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 {
     _debug_print_FS("\n%d FS : Called chown  | path : %s\n", FS_COUNT++, path);
 
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+
+    if (info.value == NULL)
+        return -ENOENT;
+
+    if (context->uid == 0) // sudo
+    {
+        if (info.flags & MM_DIR) // check if directory
+        {
+            dir d;
+            memcpy(&d, info.value, sizeof(struct dir));
+            if (uid != -1)
+                d.uid = uid;
+            if (gid != -1)
+                d.gid = gid;
+            memcached_replace_struct(m, d.cn.path, &d, sizeof(struct dir), 0, MM_DIR);
+        }
+        else if (info.flags & MM_FIL) // check if file
+        {
+            file f;
+            memcpy(&f, info.value, sizeof(struct file));
+            if (uid != -1)
+                f.uid = uid;
+            if (gid != -1)
+                f.gid = gid;
+            memcached_replace_struct(m, f.cn.path, &f, sizeof(struct file), 0, MM_FIL);
+        }
+        else
+            return -1;
+    }
+    else
+    {
+        if (info.flags & MM_DIR) // check if directory
+        {
+            dir d;
+            memcpy(&d, info.value, sizeof(struct dir));
+            if (context->uid == d.uid && context->gid == d.gid && gid != -1)
+                d.gid = gid;
+            else
+                return -EPERM;
+            memcached_replace_struct(m, d.cn.path, &d, sizeof(struct dir), 0, MM_DIR);
+        }
+        else if (info.flags & MM_FIL) // check if file
+        {
+            file f;
+            memcpy(&f, info.value, sizeof(struct file));
+            if (context->uid == f.uid && context->gid == f.gid && gid != -1)
+                f.gid = gid;
+            else
+                return -EPERM;
+            memcached_replace_struct(m, f.cn.path, &f, sizeof(struct file), 0, MM_FIL);
+        }
+        else
+            return -1;
+    }
     return 0;
 }
 
