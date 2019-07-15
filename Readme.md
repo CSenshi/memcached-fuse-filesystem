@@ -114,7 +114,7 @@ Following file system uses memcached to operate on files and directories as if i
             index = n / DATA_SIZE
             needed chunk key = "$(index)/dir1/test.txt"
 
-    3). 
+    
 
         
         
