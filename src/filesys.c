@@ -256,6 +256,10 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
 {
     _debug_print_FS("\n%d FS : Called read  | path : %s\n", FS_COUNT++, path);
 
+    int no_access = FS_access(path, (F_OK | R_OK));
+    if (no_access)
+        return no_access;
+
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
 
@@ -286,6 +290,10 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
 int FS_write(const char *path, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
     _debug_print_FS("\n%d FS : Called write  | path : %s\n", FS_COUNT++, path);
+
+    int no_access = FS_access(path, (F_OK | W_OK));
+    if (no_access)
+        return no_access;
 
     struct fuse_context *context = (struct fuse_context *)fuse_get_context();
     struct memcached *m = (struct memcached *)(context->private_data);
@@ -437,7 +445,68 @@ int FS_access(const char *path, int mask)
 {
     _debug_print_FS("\n%d FS : Called access  | path : %s\n", FS_COUNT++, path);
 
-    return 0;
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, path, &info);
+    if (info.value == NULL)
+        return -ENOENT;
+
+    gid_t cur_gid;
+    uid_t cur_uid;
+    mode_t mode;
+
+    if (info.flags & MM_DIR) // check if directory
+    {
+        dir d;
+        memcpy(&d, info.value, sizeof(struct dir));
+        mode = d.mode;
+        cur_gid = d.gid;
+        cur_uid = d.uid;
+    }
+    else if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+        mode = f.mode;
+        cur_gid = f.gid;
+        cur_uid = f.uid;
+    }
+    else //error
+        return -ENOENT;
+
+    int R_PERM, W_PERM, X_PERM;
+
+    if (cur_uid == context->uid) // is user
+    {
+        R_PERM = S_IRUSR; /* R for owner */
+        W_PERM = S_IWUSR; /* W for owner */
+        X_PERM = S_IXUSR; /* X for owner */
+    }
+    else if (cur_gid == context->gid) // is gid
+    {
+        R_PERM = S_IRGRP; /* R for group */
+        W_PERM = S_IWGRP; /* W for group */
+        X_PERM = S_IXGRP; /* X for group */
+    }
+    else // is other
+    {
+        R_PERM = S_IROTH; /* R for other */
+        W_PERM = S_IWOTH; /* W for other */
+        X_PERM = S_IXOTH; /* X for other */
+    }
+
+    if ((mask & R_OK) && (mode & R_PERM)) /* (wants to write) and (has permission) */
+        return 0;
+
+    if ((mask & W_OK) && (mode & W_PERM)) /* (wants to read) and (has permission) */
+        return 0;
+
+    if ((mask & X_OK) && (mode & X_PERM)) /* (wants to execute) and (has permission) */
+        return 0;
+
+    return -EACCES;
 }
 
 /* Set extended attributes */
