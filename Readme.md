@@ -84,3 +84,37 @@ Following file system uses memcached to operate on files and directories as if i
     } dir;
     ```
     Directory class is responsible for creating and saving directories. same structure as files but implementation is different.
+
+    **Key Details**
+
+    1). **Hierarchy :** current file system's main key is that it can be easily refactored or modified. Each of the class is on its own and only know what it really needs to know about lower classes.for example chunk class has no idea about content and Content has no idea what are directories or files. same goes to memcached. It is only interface that we use to save chunks and informations and thus have no idea that we are using it for file system. This architecture strongly follows decoupling of classes and dependancy injection.
+        
+
+         _______________
+        |               |
+        |   DIRECTORY   |_____
+        |_______________|     |      _______________       ___________
+                              |     |               |     |           |
+                              |====>|    CONTENT    |====>|   CHUNK   |
+         _______________      |     |_______________|     |___________|
+        |               |_____|
+        |     FILE      |
+        |_______________| 
+                          
+
+    
+    2). **Random Acces Memory :**
+        Every chunk operation in this file system in in o(1). each chunk is indexed using file name and saved in the memcached as follows : "$(index_of_chunk)$(file_full_path)"
+
+        Example:
+            We create file named test.txt inside directory dir1.
+            full path would be : /dir1/test.txt
+            now imagine this file's size is 1 GB. and we want to access nth byte
+            we just calculate index knowing that each chunk contains daa of DATA_SIZE bytes:
+            index = n / DATA_SIZE
+            needed chunk key = "$(index)/dir1/test.txt"
+
+    3). 
+
+        
+        
