@@ -37,13 +37,15 @@ void *FS_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
     struct memcached *m = malloc(sizeof(struct memcached));
     memcached_init(m);
 
-    if (_FS_check(m))
-    {
-        // ToDo
-    }
-    else
+    if (!_FS_check(m))
     {
         memcached_flush(m);
+
+        mm_data_info info = {UNIQUE_STR, 0, 0, 0, 0};
+        // add unique key
+        memcached_add(m, info);
+
+        // add root directory
         mode_t root_mode = ACCESSPERMS;
         dir_create("/", root_mode, context->uid, context->gid, m);
     }
@@ -864,9 +866,9 @@ int FS_utimens(const char *path, const struct timespec tv[2], struct fuse_file_i
 int _FS_check(memcached *m)
 {
     struct mm_data_info info;
-    memcached_get(m, INDEX_KEY_STR, &info);
+    memcached_get(m, UNIQUE_STR, &info);
     if (!info.value)
         return 0;
 
-    return 0;
+    return 1;
 }

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define INDEX_KEY_STR "_key_current_index_"
+#define UNIQUE_STR "Vm14U1ExWXhVWGhXV0dSb1VsYzRPUT09"
 
 #define MM_DIR 1 << 1
 #define MM_FIL 1 << 2

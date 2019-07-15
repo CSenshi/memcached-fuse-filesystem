@@ -34,12 +34,6 @@ parse_val parse_path(const char *path)
     return prs;
 }
 
-int get_next_index(struct memcached *m)
-{
-    int ind_value = memcached_increment(m, INDEX_KEY_STR, 1);
-    return ind_value;
-}
-
 char *int_to_str(int k)
 {
     int len = 20;
