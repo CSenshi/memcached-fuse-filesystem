@@ -779,13 +779,24 @@ int FS_symlink(const char *linkname, const char *path)
 
     char *par_dir = get_par_path(path);
 
-    int to_alloc = strlen(linkname) + strlen(par_dir);
+    int to_alloc = strlen(linkname) + strlen(par_dir) + 2;
     char link_path[to_alloc];
     memcpy(link_path, par_dir, strlen(par_dir));
-    memcpy(link_path + strlen(par_dir), linkname, strlen(linkname) + 1);
+
+    if (strlen(par_dir) == 1)
+        memcpy(link_path + strlen(par_dir), linkname, strlen(linkname) + 1);
+    else
+    {
+        link_path[strlen(par_dir)] = '/';
+        memcpy(link_path + strlen(par_dir) + 1, linkname, strlen(linkname) + 1);
+    }
 
     mm_data_info info;
     memcached_get(m, link_path, &info);
+
+    printf("AAAAAAAAAAAAAAAAAAAA %s\n", link_path);
+    printf("AAAAAAAAAAAAAAAAAAAA %s\n", linkname);
+    printf("AAAAAAAAAAAAAAAAAAAA %s\n", path);
 
     if (info.value == NULL)
         return -ENOENT;
@@ -813,6 +824,7 @@ int FS_symlink(const char *linkname, const char *path)
 
         res = file_create_symlink(&f, linkname, m);
     }
+    printf("EEEEEEEEEEEEEE %d\n", res);
     return res;
 }
 
@@ -870,5 +882,5 @@ int _FS_check(memcached *m)
     if (!info.value)
         return 0;
 
-    return 1;
+    return 0;
 }

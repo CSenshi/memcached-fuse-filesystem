@@ -47,9 +47,83 @@ test1(){
     echo
 }
 
-
 test2(){
-    echo "Test 2 : link multiple files"
+    echo "Test 2 : link two files inside same directory"
+    
+    mkdir test2_dir
+    cd test2_dir
+    mkdir dir
+    cd dir
+    
+    FILE1="file.txt"
+    FILE2="file_to_link.txt"
+    CONTENT="Test for linking inside directories..."
+    
+    echo "$CMD echo $CONTENT > $FILE1"
+    echo "$CONTENT" > $FILE1
+    echo
+    
+    echo "$CMD ln -s $FILE1 $FILE2"
+    ln -s $FILE1 $FILE2
+    echo
+    
+    echo "$CMD ls -l"
+    ls --color=auto -l
+    echo
+    
+    echo "$CMD cat $FILE1"
+    cat $FILE1
+    echo
+    
+    echo "$CMD cat $FILE2"
+    cat $FILE2
+    echo
+    
+    cd ..
+    cd ..
+    
+    echo "Done!"
+    echo
+}
+
+test3(){
+    echo "Test 3 : link two files inside different directory"
+    
+    mkdir test3_dir
+    cd test3_dir
+    mkdir dir1
+    mkdir dir1/dir2
+    
+    FILE1="dir1/dir2/file.txt"
+    FILE2="file_to_link.txt"
+    CONTENT="Test for linking inside directories..."
+    
+    echo "$CMD echo $CONTENT > $FILE1"
+    echo "$CONTENT" > $FILE1
+    echo
+    
+    echo "$CMD ln -s $FILE1 $FILE2"
+    ln -s $FILE1 $FILE2
+    echo
+    
+    echo "$CMD ls -l"
+    ls --color=auto -l
+    echo
+    
+    echo "$CMD cat $FILE1"
+    cat $FILE1
+    echo
+    
+    echo "$CMD cat $FILE2"
+    cat $FILE2
+    echo
+    
+    echo "Done!"
+    echo
+}
+
+test4(){
+    echo "Test 4 : link multiple files"
     echo
     
     FILE="file_mm.txt"
@@ -84,8 +158,8 @@ test2(){
     echo
 }
 
-test3(){
-    echo "Test 3 : link direcotires"
+test5(){
+    echo "Test 5 : link direcotires"
     
     DIR="dir"
     DIR_TO_LINK="dir_to_link"
@@ -118,14 +192,19 @@ test3(){
 
 run_test(){
     # check basic symlinking
-    test1
+    # test1
     
-    # check symlinking to multiple sources
-    test2
+    # symlinking inside same directories
+    # test2
     
-    # check for directories
+    # symlinking inside different directories
     test3
     
+    # check symlinking to multiple sources
+    # test4
+    
+    # check for directories
+    # test5
 }
 
 
