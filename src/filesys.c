@@ -794,10 +794,6 @@ int FS_symlink(const char *linkname, const char *path)
     mm_data_info info;
     memcached_get(m, link_path, &info);
 
-    printf("AAAAAAAAAAAAAAAAAAAA %s\n", link_path);
-    printf("AAAAAAAAAAAAAAAAAAAA %s\n", linkname);
-    printf("AAAAAAAAAAAAAAAAAAAA %s\n", path);
-
     if (info.value == NULL)
         return -ENOENT;
 
@@ -824,7 +820,6 @@ int FS_symlink(const char *linkname, const char *path)
 
         res = file_create_symlink(&f, linkname, m);
     }
-    printf("EEEEEEEEEEEEEE %d\n", res);
     return res;
 }
 
@@ -853,6 +848,7 @@ int FS_readlink(const char *path, char *buf, size_t size)
     {
         dir d;
         memcpy(&d, info.value, sizeof(struct dir));
+        res = dir_read_symlink(&d, buf, size, m);
     }
     else if (info.flags & MM_FIL) // check if file
     {

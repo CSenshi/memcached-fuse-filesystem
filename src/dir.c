@@ -210,7 +210,7 @@ int dir_create_symlink(dir *dir, const char *to_link, memcached *m)
 {
     dir->is_linked = -1;
     content_create_symlink(&dir->cn, to_link, m);
-    memcached_replace_struct(m, dir->cn.path, dir, sizeof(struct dir), 0, MM_FIL);
+    memcached_replace_struct(m, dir->cn.path, dir, sizeof(struct dir), 0, MM_DIR);
     return 0;
 }
 
