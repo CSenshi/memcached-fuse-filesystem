@@ -19,7 +19,9 @@ int file_create(const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *
     char *par_path = get_par_path(path);
     dir d;
     dir_mmch_getdir(par_path, m, &d);
-    dir_append(&d, f.file_name, m);
+
+    parse_val prs = parse_path(path);
+    dir_append(&d, prs.arr[prs.n - 1], m);
     return 0;
 }
 
@@ -32,9 +34,8 @@ void file_init(file *f, const char *path, mode_t mode, uid_t uid, gid_t gid, mem
     f->gid = gid;
     f->uid = uid;
     f->is_linked = 0;
-    //parse
-    parse_val prs = parse_path(path);
-    memcpy(f->file_name, prs.arr[prs.n - 1], strlen(prs.arr[prs.n - 1]));
+
+    memcpy(f->file_name, path, strlen(path) + 1);
 
     content_init(&f->cn, path, m);
 
@@ -48,7 +49,7 @@ void file_init(file *f, const char *path, mode_t mode, uid_t uid, gid_t gid, mem
 int file_write(file *f, const char *buff, size_t size, off_t off, memcached *m)
 {
     int bytes = content_write(&f->cn, off, size, buff, m);
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
     return bytes;
 }
 
@@ -121,7 +122,7 @@ int file_setxattr(file *f, const char *name, const char *value, size_t size, mem
 
     char ex_path[MAX_FNAME];
     create_ex_name(ex_path, ex_path);
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
     return res;
 }
 
@@ -138,7 +139,7 @@ int file_remxattr(file *f, const char *name, memcached *m)
         return -2;
 
     content_free(&f->ex_cn, m);
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
     content_init(&f->ex_cn, strdup(f->ex_cn.path), m);
     for (int i = 0; i < pv.n; i++)
     {
@@ -147,7 +148,7 @@ int file_remxattr(file *f, const char *name, memcached *m)
         content_append(&f->ex_cn, strlen(pv.arr[i]), pv.arr[i], m);
     }
 
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
 
     return 0;
 }
@@ -162,7 +163,7 @@ int file_create_symlink(file *f, const char *to_link, memcached *m)
 {
     f->is_linked = -1;
     content_create_symlink(&f->cn, to_link, m);
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
     return 0;
 }
 
@@ -177,5 +178,5 @@ int file_read_symlink(file *f, char *buf, size_t size, memcached *m)
 int file_change_mode(file *f, mode_t mode, memcached *m)
 {
     f->mode = mode;
-    memcached_replace_struct(m, f->cn.path, f, sizeof(struct file), 0, MM_FIL);
+    memcached_replace_struct(m, f->file_name, f, sizeof(struct file), 0, MM_FIL);
 }
