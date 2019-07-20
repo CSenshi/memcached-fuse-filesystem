@@ -40,14 +40,17 @@ int chunk_read(chunk *c, int off_set, char *buf, int size, memcached *m)
     return read_bytes;
 }
 
-void chunk_mmch_getchunk(char *key, memcached *m, chunk *c)
+int chunk_mmch_getchunk(char *key, memcached *m, chunk *c)
 {
     mm_data_info info;
     memcached_get(m, key, &info);
 
     // copy given value into
     if (info.value)
+    {
         memcpy(c, info.value, sizeof(struct chunk));
+        return 1;
+    }
     else
-        memset(c, 0, sizeof(struct chunk));
+        return 0;
 }

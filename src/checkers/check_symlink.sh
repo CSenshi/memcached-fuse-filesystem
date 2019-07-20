@@ -118,6 +118,7 @@ test3(){
     cat $FILE2
     echo
     
+    cd ..
     echo "Done!"
     echo
 }
@@ -192,19 +193,19 @@ test5(){
 
 run_test(){
     # check basic symlinking
-    # test1
+    test1
     
     # symlinking inside same directories
-    # test2
+    test2
     
     # symlinking inside different directories
     test3
     
     # check symlinking to multiple sources
-    # test4
+    test4
     
     # check for directories
-    # test5
+    test5
 }
 
 

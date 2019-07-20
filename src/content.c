@@ -79,10 +79,8 @@ void _content_get_chunk(int index, content *cn, chunk *c, memcached *m)
     _content_to_str(index, cn, str);
     int total_ind = (cn->size / DATA_SIZE);
 
-    chunk_mmch_getchunk(str, m, c);
-    if (c->_NOT_USED)
-        return;
-    chunk_create(str, c, m);
+    if (!chunk_mmch_getchunk(str, m, c))
+        chunk_create(str, c, m);
 }
 
 void content_free(content *cn, memcached *m)
