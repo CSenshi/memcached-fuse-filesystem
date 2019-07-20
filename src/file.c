@@ -81,9 +81,13 @@ int file_rm(const char *path, memcached *m)
     {
         if (!strcmp(dc.arr[i], cur_path))
         {
-            dir d;
-            dir_mmch_getdir(path, m, &d);
-            content dir_con = d.cn;
+            file f;
+            mm_data_info info;
+
+            memcached_get(m, path, &info);
+            memcpy(&f, info.value, info.size);
+
+            content dir_con = f.cn;
             if (dir_con.size != 0)
                 return -1;
 
