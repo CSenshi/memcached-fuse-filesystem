@@ -426,6 +426,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+
         if (f.is_hardlink)
             file_read_hardlink(&f, &f, m);
 
@@ -435,6 +436,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
             buf->st_mode = S_IFREG | f.mode;
 
         buf->st_nlink = f.hardlink_count;
+
         buf->st_size = file_get_size(&f, m);
         buf->st_uid = f.uid;
         buf->st_gid = f.gid;
@@ -582,6 +584,8 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+        if (f.is_hardlink)
+            file_read_hardlink(&f, &f, m);
 
         res = file_getxattr(&f, name, value, size, m);
     }

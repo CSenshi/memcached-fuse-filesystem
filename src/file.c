@@ -10,10 +10,10 @@ int file_create(const char *path, mode_t mode, uid_t uid, gid_t gid, memcached *
     file f;
     file_init(&f, path, mode, uid, gid, m);
 
-    int res = memcached_add_struct(m, path, &f, sizeof(struct file), 0, MM_FIL);
+    int res = memcached_set_struct(m, path, &f, sizeof(struct file), 0, MM_FIL);
 
-    if (res == ERROR || res == NOT_STORED)
-        return -1;
+    // if (res == ERROR || res == NOT_STORED)
+    //     return -1;
 
     // path = get_cur_path(path);
     char *par_path = get_par_path(path);
@@ -89,11 +89,22 @@ int file_rm(const char *path, memcached *m)
             memcached_get(m, path, &info);
             memcpy(&f, info.value, info.size);
 
-            content dir_con = f.cn;
-            if (dir_con.size != 0)
-                return -1;
-
-            memcached_delete(m, path);
+            if (f.is_hardlink)
+            {
+                file buff;
+                file_read_hardlink(&f, &buff, m);
+                buff.hardlink_count--;
+                memcached_replace_struct(m, buff.file_name, &buff, sizeof(struct file), 0, MM_FIL);
+            }
+            if (!(!f.is_hardlink && f.hardlink_count > 1))
+            {
+                memcached_delete(m, path);
+            }
+            else
+            {
+                f.hardlink_count--;
+                memcached_replace_struct(m, f.file_name, &f, sizeof(struct file), 0, MM_FIL);
+            }
             ind = i;
             break;
         }
@@ -203,7 +214,6 @@ int file_read_hardlink(file *f, file *buff, memcached *m)
 {
     if (!f->is_hardlink)
         return 0;
-
     mm_data_info info;
     memcached_get(m, f->hardlink_name, &info);
 
