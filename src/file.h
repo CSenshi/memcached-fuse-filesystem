@@ -15,6 +15,7 @@ typedef struct file
     int _NOT_USED;
     char file_name[MAX_FNAME];
     int is_hardlink;
+    int hardlink_count;
     char hardlink_name[MAX_FNAME];
     content ex_cn;
     content cn;

@@ -434,7 +434,7 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
         else
             buf->st_mode = S_IFREG | f.mode;
 
-        buf->st_nlink = 1;
+        buf->st_nlink = f.hardlink_count;
         buf->st_size = file_get_size(&f, m);
         buf->st_uid = f.uid;
         buf->st_gid = f.gid;
