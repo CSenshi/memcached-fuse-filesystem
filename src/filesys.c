@@ -276,6 +276,9 @@ int FS_read(const char *path, char *buf, size_t size, off_t off, struct fuse_fil
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+        if (f.is_hardlink)
+            file_read_hardlink(&f, &f, m);
+
         int read_bytes = file_read(&f, buf, size, off, m);
         return read_bytes;
     }
@@ -311,6 +314,9 @@ int FS_write(const char *path, const char *buf, size_t size, off_t off, struct f
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+        if (f.is_hardlink)
+            file_read_hardlink(&f, &f, m);
+
         return file_write(&f, buf, size, off, m);
     }
 
@@ -420,6 +426,9 @@ int FS_getattr(const char *path, struct stat *buf, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+        if (f.is_hardlink)
+            file_read_hardlink(&f, &f, m);
+
         if (f.is_linked)
             buf->st_mode = S_IFLNK | f.mode;
         else
@@ -471,6 +480,7 @@ int FS_access(const char *path, int mask)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+
         mode = f.mode;
         cur_gid = f.gid;
         cur_uid = f.uid;
@@ -572,6 +582,7 @@ int FS_getxattr(const char *path, const char *name, char *value, size_t size)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+
         res = file_getxattr(&f, name, value, size, m);
     }
     else //error
@@ -607,6 +618,7 @@ int FS_listxattr(const char *path, char *list, size_t size)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+
         res = file_listxattr(&f, list, size, m);
     }
     else //error
@@ -681,6 +693,7 @@ int FS_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
     {
         file f;
         memcpy(&f, info.value, sizeof(struct file));
+
         if (f.uid != context->uid && context->uid != 0)
             return -EPERM;
         file_change_mode(&f, mode, m);
@@ -724,6 +737,7 @@ int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
         {
             file f;
             memcpy(&f, info.value, sizeof(struct file));
+
             if (uid != -1)
                 f.uid = uid;
             if (gid != -1)
@@ -749,6 +763,7 @@ int FS_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
         {
             file f;
             memcpy(&f, info.value, sizeof(struct file));
+
             if (context->uid == f.uid && context->gid == f.gid && gid != -1)
                 f.gid = gid;
             else
@@ -766,6 +781,23 @@ int FS_link(const char *oldpath, const char *newpath)
 {
     _debug_print_FS("\n%d FS : Called link  | path : %s\n", FS_COUNT++, newpath);
 
+    struct fuse_context *context = (struct fuse_context *)fuse_get_context();
+    struct memcached *m = (struct memcached *)(context->private_data);
+
+    mm_data_info info;
+    memcached_get(m, oldpath, &info);
+
+    if (info.value == NULL)
+        return -ENOENT;
+
+    if (info.flags & MM_FIL) // check if file
+    {
+        file f;
+        memcpy(&f, info.value, sizeof(struct file));
+
+        int res = file_create(newpath, f.mode, f.uid, f.gid, m);
+        res = file_create_hardlink(&f, newpath, m);
+    }
     return 0;
 }
 

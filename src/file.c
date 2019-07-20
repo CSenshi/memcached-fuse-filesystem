@@ -34,6 +34,7 @@ void file_init(file *f, const char *path, mode_t mode, uid_t uid, gid_t gid, mem
     f->gid = gid;
     f->uid = uid;
     f->is_linked = 0;
+    f->is_hardlink = 0;
 
     memcpy(f->file_name, path, strlen(path) + 1);
 
@@ -177,6 +178,31 @@ int file_read_symlink(file *f, char *buf, size_t size, memcached *m)
     if (read_bytes > 0)
         return 0;
     return -1;
+}
+
+int file_create_hardlink(file *f, const char *to_link, memcached *m)
+{
+    mm_data_info info;
+    memcached_get(m, to_link, &info);
+
+    file linked_file;
+    memcpy(&linked_file, info.value, sizeof(struct file));
+
+    linked_file.is_hardlink = 1;
+    memcpy(linked_file.hardlink_name, f->file_name, strlen(f->file_name));
+
+    memcached_replace_struct(m, to_link, &linked_file, sizeof(struct file), 0, MM_FIL);
+}
+
+int file_read_hardlink(file *f, file *buff, memcached *m)
+{
+    if (!f->is_hardlink)
+        return 0;
+
+    mm_data_info info;
+    memcached_get(m, f->hardlink_name, &info);
+
+    memcpy(buff, info.value, sizeof(struct file));
 }
 
 int file_change_mode(file *f, mode_t mode, memcached *m)

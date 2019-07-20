@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-#define DEBUG 0
-#define DEBUG_FS 0
+#define DEBUG 1
+#define DEBUG_FS 1
 
 __fortify_function int
 _debug_print(const char *__restrict __fmt, ...)
