@@ -59,14 +59,18 @@ Following file system uses memcached to operate on files and directories as if i
 4. (1) **File Class overview**
     ```c
     typedef struct file{
+        int _NOT_USED;
         char file_name[MAX_FNAME];
+        int is_hardlink;
+        int hardlink_count;
+        char hardlink_name[MAX_FNAME];
         content ex_cn;
         content cn;
         int is_linked;
         uid_t uid;
         gid_t gid;
         mode_t mode;
-    } file;
+    } file; 
     ```
     file class is responsible for creating files and operating over it. File name is full path of current file. which is the key to the memcached. also here we have two content classes 'cn' is responsible forsaving real data, as for 'ex_cn' is is used to save external attributes.
 
@@ -83,7 +87,7 @@ Following file system uses memcached to operate on files and directories as if i
         mode_t mode;
     } dir;
     ```
-    Directory class is responsible for creating and saving directories. same structure as files but implementation is different.
+    Directory class is responsible for creating and saving directories. same structure as files (with least parameters) but implementation is different.
 
     **Key Details**
 
@@ -104,17 +108,28 @@ Following file system uses memcached to operate on files and directories as if i
 
     
     2). **Random Acces Memory :**
-        Every chunk operation in this file system in in o(1). each chunk is indexed using file name and saved in the memcached as follows : "$(index_of_chunk)$(file_full_path)"
 
-        Example:
-            We create file named test.txt inside directory dir1.
-            full path would be : /dir1/test.txt
-            now imagine this file's size is 1 GB. and we want to access nth byte
-            we just calculate index knowing that each chunk contains daa of DATA_SIZE bytes:
-            index = n / DATA_SIZE
-            needed chunk key = "$(index)/dir1/test.txt"
+    Every chunk operation in this file system in in o(1). each chunk is indexed using file name and saved in the memcached as follows : "$(index_of_chunk)$(file_full_path)"
 
-    
+    Example:
+
+    We create file named test.txt inside directory dir1.
+    full path would be : /dir1/test.txt
+    now imagine this file's size is 1 GB. and we want to access nth byte
+    we just calculate index knowing that each chunk contains daa of DATA_SIZE bytes:
+    index = n / DATA_SIZE
+    needed chunk key = "$(index)/dir1/test.txt"
+
+    3).**Saving Data (Xattr)**
+        
+    problem here was to save data without delimiters and using as small space as possible. This solution was inspired from DNS protocol, which sends data as follows: first it writes how many bytes should you read. and then that number of bytes. after that again how many bytes you want and so on...
+
+    Example:
+
+    We want to save data {key:value} we would save in chunk next thing
+    ``3key5value``
+
+    but as you might have thought this would not work for strings which have more than 10 bytes. So I decided to create unique saving and created constant length number, so {key:value} would be saved as ```003key005value```
 
         
         

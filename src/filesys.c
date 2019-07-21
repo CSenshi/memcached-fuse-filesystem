@@ -914,5 +914,5 @@ int _FS_check(memcached *m)
     if (!info.value)
         return 0;
 
-    return 0;
+    return 1;
 }
